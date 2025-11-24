@@ -14,6 +14,8 @@ import { typography, fontSize, fontWeight } from '../theme/typography';
 import { musicService } from '../services/musicService';
 import TrackItem from './TrackItem';
 import { Audio } from 'expo-av';
+import VoteButton from './VoteButton';
+import EndorseButton from './EndorseButton';
 
 interface EventCardProps {
   event: EventWithTracks;
@@ -218,6 +220,22 @@ export default function EventCard({ event }: EventCardProps) {
           </TouchableOpacity>
         )}
       </View>
+
+      {/* Social features: Vote and Endorse */}
+      <VoteButton
+        eventId={event.id}
+        eventName={event.name}
+        eventDate={event.date}
+        venueName={event.venue.name}
+      />
+
+      <EndorseButton
+        type="event"
+        eventId={event.id}
+        eventName={event.name}
+        eventDate={event.date}
+        venueName={event.venue.name}
+      />
 
       {showTracks && (
         <View style={styles.tracksContainer}>
