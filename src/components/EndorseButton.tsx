@@ -2,8 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, TextInput, Modal } from 'react-native';
 import { colors } from '../theme/colors';
 import { typography } from '../theme/typography';
-import { endorsementService } from '../services/endorsementService';
-import { EventEndorsement, ArtistEndorsement } from '../types/social';
+import { apiService } from '../services/apiService';
 import { useAuth } from '../context/AuthContext';
 
 interface EventEndorseButtonProps {
@@ -27,7 +26,7 @@ type EndorseButtonProps = EventEndorseButtonProps | ArtistEndorseButtonProps;
 export default function EndorseButton(props: EndorseButtonProps) {
   const { user } = useAuth();
   const [hasEndorsed, setHasEndorsed] = useState(false);
-  const [endorsements, setEndorsements] = useState<(EventEndorsement | ArtistEndorsement)[]>([]);
+  const [endorsements, setEndorsements] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [comment, setComment] = useState('');
@@ -45,10 +44,8 @@ export default function EndorseButton(props: EndorseButtonProps) {
   const loadEndorsements = async () => {
     try {
       const [endorsed, allEndorsements] = await Promise.all([
-        endorsementService.hasEndorsed(targetId, props.type),
-        props.type === 'event'
-          ? endorsementService.getEventEndorsements(targetId)
-          : endorsementService.getArtistEndorsements(targetId),
+        apiService.hasEndorsed(targetId, props.type),
+        apiService.getEndorsements(targetId, props.type),
       ]);
 
       setHasEndorsed(endorsed);
@@ -67,7 +64,7 @@ export default function EndorseButton(props: EndorseButtonProps) {
       if (myEndorsement) {
         setLoading(true);
         try {
-          await endorsementService.removeEndorsement(myEndorsement.id);
+          await apiService.deleteEndorsement(myEndorsement.id);
           setHasEndorsed(false);
           await loadEndorsements();
         } catch (error) {
@@ -88,7 +85,7 @@ export default function EndorseButton(props: EndorseButtonProps) {
     setLoading(true);
     try {
       if (props.type === 'event') {
-        await endorsementService.endorseEvent(
+        await apiService.endorseEvent(
           props.eventId,
           props.eventName,
           props.eventDate,
@@ -96,7 +93,7 @@ export default function EndorseButton(props: EndorseButtonProps) {
           comment || undefined
         );
       } else {
-        await endorsementService.endorseArtist(
+        await apiService.endorseArtist(
           props.artistId,
           props.artistName,
           props.genres,

@@ -2,8 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { colors } from '../theme/colors';
 import { typography, fontSize } from '../theme/typography';
-import { votingService } from '../services/votingService';
-import { EventVoteSummary } from '../types/social';
+import { apiService } from '../services/apiService';
 import { useAuth } from '../context/AuthContext';
 
 interface VoteButtonProps {
@@ -16,7 +15,7 @@ interface VoteButtonProps {
 export default function VoteButton({ eventId, eventName, eventDate, venueName }: VoteButtonProps) {
   const { user } = useAuth();
   const [myVote, setMyVote] = useState<'interested' | 'going' | null>(null);
-  const [summary, setSummary] = useState<EventVoteSummary | null>(null);
+  const [summary, setSummary] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [expanded, setExpanded] = useState(false);
 
@@ -29,8 +28,8 @@ export default function VoteButton({ eventId, eventName, eventDate, venueName }:
   const loadVoteData = async () => {
     try {
       const [vote, voteSummary] = await Promise.all([
-        votingService.getMyVote(eventId),
-        votingService.getEventVoteSummary(eventId),
+        apiService.getMyVote(eventId),
+        apiService.getEventVoteSummary(eventId),
       ]);
 
       setMyVote(vote?.status === 'not_going' ? null : (vote?.status || null));
@@ -47,11 +46,11 @@ export default function VoteButton({ eventId, eventName, eventDate, venueName }:
     try {
       if (myVote === status) {
         // Remove vote if clicking same button
-        await votingService.removeVote(eventId);
+        await apiService.deleteVote(eventId);
         setMyVote(null);
       } else {
         // Update vote
-        await votingService.voteOnEvent(eventId, eventName, eventDate, venueName, status);
+        await apiService.voteOnEvent(eventId, eventName, eventDate, venueName, status);
         setMyVote(status);
       }
 
@@ -68,8 +67,10 @@ export default function VoteButton({ eventId, eventName, eventDate, venueName }:
 
   const totalGoing = summary?.going || 0;
   const totalInterested = summary?.interested || 0;
-  const friendsGoing = summary?.friendsGoing || [];
-  const friendsInterested = summary?.friendsInterested || [];
+  // Backend returns all votes - we'll show total count for now
+  const allVotes = summary?.votes || [];
+  const friendsGoing = allVotes.filter((v: any) => v.status === 'going');
+  const friendsInterested = allVotes.filter((v: any) => v.status === 'interested');
 
   return (
     <View style={styles.container}>
