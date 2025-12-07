@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, TextInput, Modal } from 'react-native';
 import { colors } from '../theme/colors';
 import { typography } from '../theme/typography';
-import { apiService } from '../services/apiService';
+import { endorsementsService } from '../services/endorsementsService';
 import { useAuth } from '../context/AuthContext';
 
 interface EventEndorseButtonProps {
@@ -43,12 +43,12 @@ export default function EndorseButton(props: EndorseButtonProps) {
 
   const loadEndorsements = async () => {
     try {
-      const [endorsed, allEndorsements] = await Promise.all([
-        apiService.hasEndorsed(targetId, props.type),
-        apiService.getEndorsements(targetId, props.type),
+      const [endorsementId, allEndorsements] = await Promise.all([
+        endorsementsService.hasEndorsed(targetId, props.type),
+        endorsementsService.getEndorsements(targetId, props.type),
       ]);
 
-      setHasEndorsed(endorsed);
+      setHasEndorsed(!!endorsementId);
       setEndorsements(allEndorsements);
     } catch (error) {
       console.error('Error loading endorsements:', error);
@@ -64,7 +64,7 @@ export default function EndorseButton(props: EndorseButtonProps) {
       if (myEndorsement) {
         setLoading(true);
         try {
-          await apiService.deleteEndorsement(myEndorsement.id);
+          await endorsementsService.deleteEndorsement(myEndorsement.id);
           setHasEndorsed(false);
           await loadEndorsements();
         } catch (error) {
@@ -85,7 +85,7 @@ export default function EndorseButton(props: EndorseButtonProps) {
     setLoading(true);
     try {
       if (props.type === 'event') {
-        await apiService.endorseEvent(
+        await endorsementsService.endorseEvent(
           props.eventId,
           props.eventName,
           props.eventDate,
@@ -93,7 +93,7 @@ export default function EndorseButton(props: EndorseButtonProps) {
           comment || undefined
         );
       } else {
-        await apiService.endorseArtist(
+        await endorsementsService.endorseArtist(
           props.artistId,
           props.artistName,
           props.genres,

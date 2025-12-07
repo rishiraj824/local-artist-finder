@@ -1,23 +1,36 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
+import { initializeAuth, getReactNativePersistence } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import {
+  FIREBASE_API_KEY,
+  FIREBASE_AUTH_DOMAIN,
+  FIREBASE_PROJECT_ID,
+  FIREBASE_STORAGE_BUCKET,
+  FIREBASE_MESSAGING_SENDER_ID,
+  FIREBASE_APP_ID,
+} from '@env';
 
 // Firebase configuration
-// TODO: Replace with your Firebase project credentials from Firebase Console
 const firebaseConfig = {
-  apiKey: process.env.FIREBASE_API_KEY || 'your-api-key',
-  authDomain: process.env.FIREBASE_AUTH_DOMAIN || 'your-project.firebaseapp.com',
-  projectId: process.env.FIREBASE_PROJECT_ID || 'your-project-id',
-  storageBucket: process.env.FIREBASE_STORAGE_BUCKET || 'your-project.appspot.com',
-  messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID || 'your-sender-id',
-  appId: process.env.FIREBASE_APP_ID || 'your-app-id',
+  apiKey: FIREBASE_API_KEY || 'AIzaSyB15AqZwqEWZfG21AGOzTsP41zzk6Z0wRI',
+  authDomain: FIREBASE_AUTH_DOMAIN || 'local-artist-discovery.firebaseapp.com',
+  projectId: FIREBASE_PROJECT_ID || 'local-artist-discovery',
+  storageBucket: FIREBASE_STORAGE_BUCKET || 'local-artist-discovery.firebasestorage.app',
+  messagingSenderId: FIREBASE_MESSAGING_SENDER_ID || '165015050592',
+  appId: FIREBASE_APP_ID || '1:165015050592:web:0d4e39acc980e27d5ae605',
+  measurementId: 'G-9F3NBEQ3ZT',
 };
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
-// Initialize services
-export const auth = getAuth(app);
+// Initialize Auth with AsyncStorage persistence
+export const auth = initializeAuth(app, {
+  persistence: getReactNativePersistence(AsyncStorage),
+});
+
+// Initialize Firestore
 export const db = getFirestore(app);
 
 export default app;

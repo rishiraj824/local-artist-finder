@@ -19,15 +19,17 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.localartistfinder.app",
+      "bundleIdentifier": "com.discovery.localartist",
       "buildNumber": "1",
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "This app uses your location to find local events near you.",
         "NSContactsUsageDescription": "This app needs access to your contacts to help you find friends who are also using the app."
-      }
+      },
+      "usesAppleSignIn": true,
+      "googleServicesFile": "./GoogleService-Info.plist"
     },
     "android": {
-      "package": "com.localartistfinder.app",
+      "package": "com.discovery.localartist",
       "versionCode": 1,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
@@ -37,7 +39,8 @@
         "ACCESS_COARSE_LOCATION",
         "ACCESS_FINE_LOCATION",
         "READ_CONTACTS"
-      ]
+      ],
+      "googleServicesFile": "./google-services.json"
     },
     "web": {},
     "plugins": [
@@ -47,7 +50,9 @@
           "locationAlwaysAndWhenInUsePermission": "Allow Local Artist Finder to use your location to find nearby events."
         }
       ],
-      "expo-font"
+      "expo-font",
+      "expo-apple-authentication",
+      "@react-native-google-signin/google-signin"
     ]
   }
 }

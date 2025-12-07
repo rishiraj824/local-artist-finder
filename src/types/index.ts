@@ -69,7 +69,13 @@ export interface LocationData {
 
 // Navigation Types
 export type RootStackParamList = {
+  // Auth screens
+  PhoneAuth: undefined;
+  VerificationCode: undefined;
+  ContactsSync: undefined;
+  // App screens
   Events: undefined;
+  Profile: undefined;
   ArtistDetails: {
     artistName: string;
     eventName: string;

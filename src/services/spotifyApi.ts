@@ -1,9 +1,8 @@
-import { encode as base64Encode } from 'base-64';
 import { config } from '../config';
 import { SpotifyArtist, SpotifyTrack } from '../types';
 
-const SPOTIFY_API_BASE_URL = 'https://api.spotify.com/v1';
-const SPOTIFY_TOKEN_URL = 'https://accounts.spotify.com/api/token';
+// Backend API URL
+const API_URL = config.backendApiUrl || 'http://localhost:3000/api';
 
 // Helper to build URL with query params
 const buildUrl = (base: string, params: Record<string, string>) => {
@@ -17,76 +16,30 @@ const buildUrl = (base: string, params: Record<string, string>) => {
 };
 
 export class SpotifyService {
-  private accessToken: string | null = null;
-  private tokenExpiry: number = 0;
 
   /**
-   * Get access token using client credentials flow
-   */
-  private async getAccessToken(): Promise<string> {
-    // Return cached token if still valid
-    if (this.accessToken && Date.now() < this.tokenExpiry) {
-      return this.accessToken;
-    }
-
-    try {
-      const credentials = base64Encode(
-        `${config.spotify.clientId}:${config.spotify.clientSecret}`
-      );
-
-      const response = await fetch(SPOTIFY_TOKEN_URL, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Basic ${credentials}`,
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: 'grant_type=client_credentials',
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-
-      this.accessToken = data.access_token;
-      // Set expiry to 50 minutes (tokens last 1 hour)
-      this.tokenExpiry = Date.now() + 50 * 60 * 1000;
-
-      return this.accessToken;
-    } catch (error) {
-      console.error('Error getting Spotify access token:', error);
-      throw new Error('Failed to authenticate with Spotify');
-    }
-  }
-
-  /**
-   * Search for an artist by name
+   * Search for an artist by name using backend API
    * @param artistName - Artist name to search for
    */
   async searchArtist(artistName: string): Promise<SpotifyArtist | null> {
     try {
-      const token = await this.getAccessToken();
-
-      const url = buildUrl(`${SPOTIFY_API_BASE_URL}/search`, {
-        q: artistName,
-        type: 'artist',
-        limit: '1',
+      const url = buildUrl(`${API_URL}/music/search`, {
+        query: artistName,
       });
 
-      const response = await fetch(url, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await fetch(url);
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
       const data = await response.json();
-      const artists = data.artists.items;
-      return artists.length > 0 ? artists[0] : null;
+
+      if (data.success && data.data) {
+        return data.data;
+      }
+
+      return null;
     } catch (error) {
       console.error('Error searching for artist on Spotify:', error);
       return null;
@@ -94,7 +47,7 @@ export class SpotifyService {
   }
 
   /**
-   * Get an artist's top tracks
+   * Get an artist's top tracks using backend API
    * @param artistId - Spotify artist ID
    * @param market - Market/country code (default: US)
    */
@@ -103,25 +56,24 @@ export class SpotifyService {
     market: string = 'US'
   ): Promise<SpotifyTrack[]> {
     try {
-      const token = await this.getAccessToken();
-
       const url = buildUrl(
-        `${SPOTIFY_API_BASE_URL}/artists/${artistId}/top-tracks`,
+        `${API_URL}/music/artist/${artistId}/top-tracks`,
         { market }
       );
 
-      const response = await fetch(url, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await fetch(url);
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
       const data = await response.json();
-      return data.tracks;
+
+      if (data.success && data.data) {
+        return data.data;
+      }
+
+      return [];
     } catch (error) {
       console.error('Error fetching artist top tracks:', error);
       throw new Error('Failed to fetch artist tracks');

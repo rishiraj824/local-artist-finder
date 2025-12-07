@@ -13,8 +13,14 @@ import { colors } from "../theme/colors";
 import { commonStyles } from "../theme/styles";
 import EventsHeader from "../components/EventsHeader";
 import EventsList from "../components/EventsList";
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../types';
+
+type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 export default function EventsScreen() {
+  const navigation = useNavigation<NavigationProp>();
   const [events, setEvents] = useState<EventWithTracks[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

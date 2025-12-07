@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { colors } from '../theme/colors';
 import { typography, fontSize } from '../theme/typography';
-import { apiService } from '../services/apiService';
+import { votesService } from '../services/votesService';
 import { useAuth } from '../context/AuthContext';
 
 interface VoteButtonProps {
@@ -28,8 +28,8 @@ export default function VoteButton({ eventId, eventName, eventDate, venueName }:
   const loadVoteData = async () => {
     try {
       const [vote, voteSummary] = await Promise.all([
-        apiService.getMyVote(eventId),
-        apiService.getEventVoteSummary(eventId),
+        votesService.getMyVote(eventId),
+        votesService.getEventVoteSummary(eventId),
       ]);
 
       setMyVote(vote?.status === 'not_going' ? null : (vote?.status || null));
@@ -46,11 +46,11 @@ export default function VoteButton({ eventId, eventName, eventDate, venueName }:
     try {
       if (myVote === status) {
         // Remove vote if clicking same button
-        await apiService.deleteVote(eventId);
+        await votesService.deleteVote(eventId);
         setMyVote(null);
       } else {
         // Update vote
-        await apiService.voteOnEvent(eventId, eventName, eventDate, venueName, status);
+        await votesService.voteOnEvent(eventId, eventName, eventDate, venueName, status);
         setMyVote(status);
       }
 
@@ -67,10 +67,8 @@ export default function VoteButton({ eventId, eventName, eventDate, venueName }:
 
   const totalGoing = summary?.going || 0;
   const totalInterested = summary?.interested || 0;
-  // Backend returns all votes - we'll show total count for now
-  const allVotes = summary?.votes || [];
-  const friendsGoing = allVotes.filter((v: any) => v.status === 'going');
-  const friendsInterested = allVotes.filter((v: any) => v.status === 'interested');
+  const friendsGoing = summary?.friendsGoing || [];
+  const friendsInterested = summary?.friendsInterested || [];
 
   return (
     <View style={styles.container}>
@@ -141,7 +139,7 @@ export default function VoteButton({ eventId, eventName, eventDate, venueName }:
               {friendsGoing.length > 0 && (
                 <View>
                   <Text style={styles.friendsLabel}>Going:</Text>
-                  {friendsGoing.map((friend) => (
+                  {friendsGoing.map((friend: any) => (
                     <Text key={friend.userId} style={styles.friendName}>
                       • {friend.displayName || 'Friend'}
                     </Text>
@@ -151,7 +149,7 @@ export default function VoteButton({ eventId, eventName, eventDate, venueName }:
               {friendsInterested.length > 0 && (
                 <View style={{ marginTop: friendsGoing.length > 0 ? 8 : 0 }}>
                   <Text style={styles.friendsLabel}>Interested:</Text>
-                  {friendsInterested.map((friend) => (
+                  {friendsInterested.map((friend: any) => (
                     <Text key={friend.userId} style={styles.friendName}>
                       • {friend.displayName || 'Friend'}
                     </Text>

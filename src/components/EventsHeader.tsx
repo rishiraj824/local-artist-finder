@@ -2,7 +2,7 @@ import React, { memo, useState, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import DropDownPicker from 'react-native-dropdown-picker';
 import { colors } from '../theme/colors';
-import { typography, fontSize } from '../theme/typography';
+import { typography } from '../theme/typography';
 
 interface Location {
   id: number;

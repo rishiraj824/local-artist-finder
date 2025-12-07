@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "165015050592",
+    "project_id": "local-artist-discovery",
+    "storage_bucket": "local-artist-discovery.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:165015050592:android:2bea6b4f1482409c5ae605",
+        "android_client_info": {
+          "package_name": "com.discovery.localartist"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "165015050592-6k4etmo4kucruhfj9ih9i8sg24f0agnh.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA4czE-1YqMgiuhC_z2IbDMQYV15jGSvmk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "165015050592-6k4etmo4kucruhfj9ih9i8sg24f0agnh.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "165015050592-9thsh42a449c1ptuuso158t83otchrtv.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.discovery.localartist"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
