@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   Image,
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { EventWithTracks, ArtistWithTracks } from '../types';
 import { colors } from '../theme/colors';
 import { typography, fontSize, fontWeight } from '../theme/typography';
@@ -20,6 +21,7 @@ interface EventCardProps {
 }
 
 export default function EventCard({ event }: EventCardProps) {
+  const navigation = useNavigation<any>();
   const [artistsWithDetails, setArtistsWithDetails] = useState<ArtistWithTracks[]>([]);
   const [isLoadingTracks, setIsLoadingTracks] = useState(false);
   const [showTracks, setShowTracks] = useState(false);
@@ -197,9 +199,13 @@ export default function EventCard({ event }: EventCardProps) {
           <Text style={styles.genresLabel}>Genres:</Text>
           <View style={styles.eventGenresContainer}>
             {event.genres.map((genre, index) => (
-              <View key={index} style={styles.eventGenreTag}>
+              <TouchableOpacity
+                key={index}
+                style={styles.eventGenreTag}
+                onPress={() => navigation.navigate('GenreDetail', { genreName: genre })}
+              >
                 <Text style={styles.eventGenreText}>{genre}</Text>
-              </View>
+              </TouchableOpacity>
             ))}
           </View>
         </View>
@@ -333,15 +339,23 @@ const styles = StyleSheet.create({
   },
   eventGenreTag: {
     backgroundColor: colors.primary,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.primaryHover,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
   },
   eventGenreText: {
     ...typography.caption,
-    color: colors.text,
-    fontWeight: fontWeight.semiBold,
+    color: '#FFFFFF',
+    fontWeight: fontWeight.bold,
     textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   venueContainer: {
     flexDirection: 'row',

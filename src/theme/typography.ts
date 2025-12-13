@@ -1,10 +1,10 @@
-// Inter font - Modern, clean, optimized for UI
-// Professional choice used by many top apps
+// Lato font - Spotify's official font
+// Warm, humanist sans-serif with excellent readability
 const fontFamily = {
-  regular: 'Inter_400Regular',
-  medium: 'Inter_500Medium',
-  semiBold: 'Inter_600SemiBold',
-  bold: 'Inter_700Bold',
+  regular: 'Lato_400Regular',
+  medium: 'Lato_400Regular', // Lato doesn't have 500, use 400
+  semiBold: 'Lato_700Bold',   // Use 700 for semiBold
+  bold: 'Lato_700Bold',
 };
 
 // Compact font sizes - optimized for information density

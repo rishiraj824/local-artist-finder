@@ -69,11 +69,16 @@ export interface LocationData {
 
 // Navigation Types
 export type RootStackParamList = {
+  MainTabs: undefined;
   Events: undefined;
+  Genres: undefined;
   ArtistDetails: {
     artistName: string;
     eventName: string;
     ticketLink?: string;
+  };
+  GenreDetail: {
+    genreName: string;
   };
 };
 
@@ -101,4 +106,24 @@ export interface MusicTrack {
   externalUrl: string;
   source: 'spotify';
   popularity?: number;
+}
+
+// User and Authentication Types
+export interface User {
+  id: string;
+  email: string;
+  displayName?: string;
+  photoURL?: string;
+  provider: 'google' | 'spotify';
+  spotifyAccessToken?: string;
+  spotifyRefreshToken?: string;
+  createdAt: Date;
+  updatedAt: Date;
+  preferences: UserPreferences;
+}
+
+export interface UserPreferences {
+  exploredGenres: string[];
+  savedEvents: string[];
+  favoriteArtists: string[];
 }

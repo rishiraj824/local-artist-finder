@@ -17,6 +17,11 @@ yarn-error.log*
 .env.test.local
 .env.production.local
 
+# Firebase & Google Services (sensitive)
+GoogleService-Info.plist
+google-services.json
+serviceAccountKey.json
+
 # macOS
 .DS_Store
 

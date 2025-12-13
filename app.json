@@ -13,17 +13,21 @@
     },
     "description": "Discover local EDM events and artists near you. Browse upcoming shows, listen to artist previews, and get tickets to events in your area.",
     "privacy": "public",
-    "platforms": ["ios", "android"],
+    "platforms": [
+      "ios",
+      "android"
+    ],
     "assetBundlePatterns": [
       "**/*"
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.localartistfinder.app",
+      "bundleIdentifier": "com.discovery.localartist",
       "buildNumber": "1",
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "This app uses your location to find local events near you."
-      }
+      },
+      "googleServicesFile": "./GoogleService-Info.plist"
     },
     "android": {
       "package": "com.localartistfinder.app",
@@ -35,7 +39,8 @@
       "permissions": [
         "ACCESS_COARSE_LOCATION",
         "ACCESS_FINE_LOCATION"
-      ]
+      ],
+      "googleServicesFile": "./google-services.json"
     },
     "web": {},
     "plugins": [
@@ -45,7 +50,10 @@
           "locationAlwaysAndWhenInUsePermission": "Allow Local Artist Finder to use your location to find nearby events."
         }
       ],
-      "expo-font"
-    ]
+      "expo-font",
+      "expo-web-browser",
+      "@react-native-google-signin/google-signin"
+    ],
+    "scheme": "localartistfinder"
   }
 }

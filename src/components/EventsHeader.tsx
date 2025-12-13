@@ -170,15 +170,20 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
+    borderWidth: 2,
+    borderColor: colors.secondaryHover,
+    shadowColor: colors.secondary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
   },
   locationButtonDisabled: {
     backgroundColor: colors.surface,
     opacity: 0.5,
   },
   locationButtonText: {
-    fontSize: 20,
+    fontSize: 22,
   },
 });
 
