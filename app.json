@@ -42,7 +42,13 @@
         "ACCESS_COARSE_LOCATION",
         "ACCESS_FINE_LOCATION",
         "CAMERA",
-        "NFC"
+        "NFC",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.CAMERA",
+        "android.permission.NFC"
       ],
       "googleServicesFile": "./google-services.json"
     },
@@ -61,6 +67,11 @@
       "expo-barcode-scanner",
       "react-native-nfc-manager"
     ],
-    "scheme": "drops"
+    "scheme": "drops",
+    "extra": {
+      "eas": {
+        "projectId": "0120b233-a48a-46bf-91bb-d92087a4e145"
+      }
+    }
   }
 }

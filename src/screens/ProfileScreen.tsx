@@ -371,96 +371,6 @@ export default function ProfileScreen() {
             </View>
           )}
 
-          {/* Animated QR Code with Neon Glow */}
-          <View className="mb-6 items-center">
-            <Text
-              className="text-[10px] font-bold text-center mb-2"
-              style={{ fontFamily: "CourierPrime_700Bold" }}
-            >
-              SCAN TO CONNECT
-            </Text>
-            <Animated.View
-              style={{
-                opacity: glowAnim.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [0.6, 1],
-                }),
-                transform: [
-                  {
-                    scale: glowAnim.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [1, 1.02],
-                    }),
-                  },
-                ],
-              }}
-            >
-              <View
-                className="bg-white p-3 border-4 border-black"
-                style={{
-                  shadowColor: "#39ff14",
-                  shadowOffset: { width: 0, height: 0 },
-                  shadowOpacity: 0.8,
-                  shadowRadius: 15,
-                }}
-              >
-                <QRCode value={user.id} size={120} backgroundColor="white" color="black" />
-              </View>
-            </Animated.View>
-            <Text
-              className="text-[8px] text-gray-600 text-center mt-2"
-              style={{ fontFamily: "CourierPrime_400Regular" }}
-            >
-              ID: {userId}
-            </Text>
-          </View>
-
-          {/* Vibe Check Buttons */}
-          <View className="mb-4" style={{ gap: 10 }}>
-            <TouchableOpacity
-              className="bg-neon-green border-4 border-black py-3 flex-row justify-center items-center gap-2"
-              style={{
-                shadowColor: "#39ff14",
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.6,
-                shadowRadius: 8,
-              }}
-              onPress={() => navigation.navigate('Scan')}
-            >
-              <Camera size={20} color="#000" strokeWidth={2.5} />
-              <Text
-                className="text-black text-sm font-black tracking-wide"
-                style={{ fontFamily: "CourierPrime_700Bold" }}
-              >
-                SCAN MODE
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              className="bg-black border-4 border-neon-pink py-3 flex-row justify-center items-center gap-2"
-              style={{
-                shadowColor: "#ff006e",
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.6,
-                shadowRadius: 8,
-              }}
-              onPress={handleNFCTap}
-              disabled={isReading}
-            >
-              {isReading ? (
-                <ActivityIndicator color="#ff006e" />
-              ) : (
-                <Wifi size={20} color="#ff006e" strokeWidth={2.5} />
-              )}
-              <Text
-                className="text-neon-pink text-sm font-black tracking-wide"
-                style={{ fontFamily: "CourierPrime_700Bold" }}
-              >
-                {isReading ? 'READING...' : 'TAP TO VIBE CHECK'}
-              </Text>
-            </TouchableOpacity>
-          </View>
-
           {/* Action Buttons */}
           <View className="flex-row justify-between items-center pt-2 border-t border-gray-400">
             <TouchableOpacity
@@ -487,6 +397,96 @@ export default function ProfileScreen() {
             </TouchableOpacity>
           </View>
         </View>
+      </View>
+
+      {/* Animated QR Code with Neon Glow */}
+      <View className="mt-6 mb-6 items-center px-4">
+        <Text
+          className="text-xs font-bold text-center mb-3 text-white"
+          style={{ fontFamily: "CourierPrime_700Bold" }}
+        >
+          SCAN TO CONNECT
+        </Text>
+        <Animated.View
+          style={{
+            opacity: glowAnim.interpolate({
+              inputRange: [0, 1],
+              outputRange: [0.6, 1],
+            }),
+            transform: [
+              {
+                scale: glowAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [1, 1.02],
+                }),
+              },
+            ],
+          }}
+        >
+          <View
+            className="bg-white p-3 border-4 border-black"
+            style={{
+              shadowColor: "#39ff14",
+              shadowOffset: { width: 0, height: 0 },
+              shadowOpacity: 0.8,
+              shadowRadius: 15,
+            }}
+          >
+            <QRCode value={user.id} size={120} backgroundColor="white" color="black" />
+          </View>
+        </Animated.View>
+        <Text
+          className="text-[10px] text-gray-400 text-center mt-2"
+          style={{ fontFamily: "CourierPrime_400Regular" }}
+        >
+          ID: {userId}
+        </Text>
+      </View>
+
+      {/* Vibe Check Buttons */}
+      <View className="px-4 mb-6" style={{ gap: 12 }}>
+        <TouchableOpacity
+          className="bg-neon-green border-4 border-black py-4 flex-row justify-center items-center gap-2"
+          style={{
+            shadowColor: "#39ff14",
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.6,
+            shadowRadius: 8,
+          }}
+          onPress={() => navigation.navigate('Scan')}
+        >
+          <Camera size={22} color="#000" strokeWidth={2.5} />
+          <Text
+            className="text-black text-base font-black tracking-wide"
+            style={{ fontFamily: "CourierPrime_700Bold" }}
+          >
+            SCAN MODE
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          className="bg-black border-4 border-neon-pink py-4 flex-row justify-center items-center gap-2"
+          style={{
+            shadowColor: "#ff006e",
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.6,
+            shadowRadius: 8,
+          }}
+          onPress={handleNFCTap}
+          disabled={isReading}
+        >
+          {isReading ? (
+            <ActivityIndicator color="#ff006e" />
+          ) : (
+            <Wifi size={22} color="#ff006e" strokeWidth={2.5} />
+          )}
+          <Text
+            className="text-neon-pink text-base font-black tracking-wide"
+            style={{ fontFamily: "CourierPrime_700Bold" }}
+          >
+            {isReading ? 'READING...' : 'TAP TO VIBE CHECK'}
+          </Text>
+        </TouchableOpacity>
       </View>
 
       {/* Decorative Stamp */}
