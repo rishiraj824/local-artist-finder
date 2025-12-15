@@ -1,10 +1,12 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   View,
   Text,
   StyleSheet,
   ActivityIndicator,
   SafeAreaView,
+  TouchableOpacity,
+  ScrollView,
 } from "react-native";
 import { EventWithTracks } from "../types";
 import { edmTrainService } from "../services/edmTrainApi";
@@ -22,6 +24,7 @@ export default function EventsScreen() {
   const [availableLocations, setAvailableLocations] = useState<any[]>([]);
   const [isUsingUserLocation, setIsUsingUserLocation] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState<string>("");
+  const [selectedGenre, setSelectedGenre] = useState<string | null>(null);
 
   // Load events once on mount and fetch available locations
   useEffect(() => {
@@ -176,24 +179,49 @@ export default function EventsScreen() {
     }
   }, [availableLocations]);
 
+  // Calculate top 3 genres from events
+  const topGenres = useMemo(() => {
+    const genreCounts: { [key: string]: number } = {};
+
+    events.forEach(event => {
+      if (event.genres && event.genres.length > 0) {
+        event.genres.forEach(genre => {
+          genreCounts[genre] = (genreCounts[genre] || 0) + 1;
+        });
+      }
+    });
+
+    return Object.entries(genreCounts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3)
+      .map(([genre]) => genre);
+  }, [events]);
+
+  // Filter events by selected genre
+  const filteredEvents = useMemo(() => {
+    if (!selectedGenre) return events;
+
+    return events.filter(event =>
+      event.genres && event.genres.includes(selectedGenre)
+    );
+  }, [events, selectedGenre]);
+
 
   if (isLoading && events.length === 0) {
     return (
-      <SafeAreaView style={commonStyles.safeArea}>
-        <View style={commonStyles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={styles.loadingText}>
-            {currentCity
-              ? `Finding events in ${currentCity}...`
-              : "Getting your location..."}
-          </Text>
-        </View>
+      <SafeAreaView className="flex-1 bg-concrete-dark justify-center items-center">
+        <ActivityIndicator size="large" color="#ff006e" />
+        <Text className="text-lg font-black text-neon-pink mt-3 tracking-widest" style={{ fontFamily: 'BlackOpsOne_400Regular' }}>
+          {currentCity
+            ? `FINDING EVENTS IN ${currentCity.toUpperCase()}...`
+            : "GETTING YOUR LOCATION..."}
+        </Text>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={commonStyles.safeArea}>
+    <SafeAreaView className="flex-1 bg-concrete-dark">
       <EventsHeader
         availableLocations={availableLocations}
         selectedLocation={selectedLocation}
@@ -201,8 +229,47 @@ export default function EventsScreen() {
         onLocationChange={handleLocationChange}
         onUseMyLocation={loadEvents}
       />
+
+      {/* Genre Filter */}
+      {topGenres.length > 0 && (
+        <View className="px-4 py-3 bg-concrete-dark border-b-2 border-concrete-mid">
+          <Text className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-2" style={{ fontFamily: 'CourierPrime_700Bold' }}>
+            FILTER BY GENRE
+          </Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            <View className="flex-row gap-2">
+              <TouchableOpacity
+                className={`px-4 py-2 border-2 ${!selectedGenre ? 'bg-neon-green border-neon-green' : 'bg-concrete-mid border-concrete-light'}`}
+                onPress={() => setSelectedGenre(null)}
+              >
+                <Text
+                  className={`text-sm font-black uppercase tracking-wide ${!selectedGenre ? 'text-black' : 'text-gray-400'}`}
+                  style={{ fontFamily: 'CourierPrime_700Bold' }}
+                >
+                  ALL
+                </Text>
+              </TouchableOpacity>
+              {topGenres.map((genre) => (
+                <TouchableOpacity
+                  key={genre}
+                  className={`px-4 py-2 border-2 ${selectedGenre === genre ? 'bg-neon-pink border-neon-pink' : 'bg-concrete-mid border-concrete-light'}`}
+                  onPress={() => setSelectedGenre(selectedGenre === genre ? null : genre)}
+                >
+                  <Text
+                    className={`text-sm font-black uppercase tracking-wide ${selectedGenre === genre ? 'text-black' : 'text-gray-400'}`}
+                    style={{ fontFamily: 'CourierPrime_700Bold' }}
+                  >
+                    {genre}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </ScrollView>
+        </View>
+      )}
+
       <EventsList
-        events={events}
+        events={filteredEvents}
         isLoading={isLoading}
         error={error}
         onRefresh={loadEvents}

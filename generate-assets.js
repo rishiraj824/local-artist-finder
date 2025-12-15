@@ -1,8 +1,8 @@
-const sharp = require('sharp');
-const fs = require('fs');
-const path = require('path');
+const sharp = require("sharp");
+const fs = require("fs");
+const path = require("path");
 
-const assetsDir = path.join(__dirname, 'assets');
+const assetsDir = path.join(__dirname, "assets");
 
 // Ensure assets directory exists
 if (!fs.existsSync(assetsDir)) {
@@ -29,19 +29,18 @@ const createIcon = async () => {
     </svg>
   `;
 
-  await sharp(Buffer.from(svg))
-    .png()
-    .toFile(path.join(assetsDir, 'icon.png'));
+  await sharp(Buffer.from(svg)).png().toFile(path.join(assetsDir, "icon.png"));
 
-  console.log('✅ Created icon.png');
+  console.log("✅ Created icon.png");
 };
 
 // Create adaptive-icon.png (same as icon)
 const createAdaptiveIcon = async () => {
-  await sharp(path.join(assetsDir, 'icon.png'))
-    .toFile(path.join(assetsDir, 'adaptive-icon.png'));
+  await sharp(path.join(assetsDir, "icon.png")).toFile(
+    path.join(assetsDir, "adaptive-icon.png")
+  );
 
-  console.log('✅ Created adaptive-icon.png');
+  console.log("✅ Created adaptive-icon.png");
 };
 
 // Create splash.png (1284x2778)
@@ -59,29 +58,29 @@ const createSplash = async () => {
       <circle cx="642" cy="1100" r="180" fill="url(#grad2)"/>
       <circle cx="642" cy="1100" r="120" fill="none" stroke="white" stroke-width="15" opacity="0.9"/>
       <path d="M 642 1100 L 642 980" stroke="white" stroke-width="15" stroke-linecap="round" opacity="0.9"/>
-      <text x="642" y="1500" font-family="Arial, sans-serif" font-size="72" font-weight="bold" fill="white" text-anchor="middle">Local Artist Finder</text>
+      <text x="642" y="1500" font-family="Arial, sans-serif" font-size="72" font-weight="bold" fill="white" text-anchor="middle">Drops</text>
       <text x="642" y="1600" font-family="Arial, sans-serif" font-size="42" fill="#8B5CF6" text-anchor="middle">Find Events Near You</text>
     </svg>
   `;
 
   await sharp(Buffer.from(svg))
     .png()
-    .toFile(path.join(assetsDir, 'splash.png'));
+    .toFile(path.join(assetsDir, "splash.png"));
 
-  console.log('✅ Created splash.png');
+  console.log("✅ Created splash.png");
 };
 
 // Generate all assets
 (async () => {
   try {
-    console.log('🎨 Generating placeholder assets...\n');
+    console.log("🎨 Generating placeholder assets...\n");
     await createIcon();
     await createAdaptiveIcon();
     await createSplash();
-    console.log('\n✨ All assets created successfully!');
-    console.log('📁 Check the assets/ folder\n');
+    console.log("\n✨ All assets created successfully!");
+    console.log("📁 Check the assets/ folder\n");
   } catch (error) {
-    console.error('❌ Error generating assets:', error);
+    console.error("❌ Error generating assets:", error);
     process.exit(1);
   }
 })();

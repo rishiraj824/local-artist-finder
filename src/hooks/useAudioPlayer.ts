@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Audio } from 'expo-av';
+import { Audio } from 'expo-audio';
 
 export const useAudioPlayer = () => {
   const [sound, setSound] = useState<Audio.Sound | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTrackId, setCurrentTrackId] = useState<string | null>(null);
 
-  const playSound = async (uri: string, trackId: string) => {
+  const playSound = async (uri: string, trackId: string = uri) => {
     try {
       // If clicking the same track that's playing, pause it
       if (currentTrackId === trackId && isPlaying && sound) {
@@ -49,6 +49,46 @@ export const useAudioPlayer = () => {
     }
   };
 
+  const playSoundFromCenter = async (uri: string, trackId: string = uri) => {
+    try {
+      // Stop current sound if playing
+      if (sound) {
+        await sound.unloadAsync();
+      }
+
+      // Load new sound
+      const { sound: newSound } = await Audio.Sound.createAsync(
+        { uri },
+        { shouldPlay: false }
+      );
+
+      // Get the track duration and seek to center
+      const status = await newSound.getStatusAsync();
+      if (status.isLoaded && status.durationMillis) {
+        const centerPosition = status.durationMillis / 2;
+        await newSound.setPositionAsync(centerPosition);
+      }
+
+      // Now play from center
+      await newSound.playAsync();
+
+      setSound(newSound);
+      setCurrentTrackId(trackId);
+      setIsPlaying(true);
+
+      // Monitor playback status
+      newSound.setOnPlaybackStatusUpdate((status) => {
+        if (status.isLoaded && status.didJustFinish) {
+          setIsPlaying(false);
+        }
+      });
+    } catch (error) {
+      console.error('[useAudioPlayer] Error playing sound from center:', error);
+      setIsPlaying(false);
+      setCurrentTrackId(null);
+    }
+  };
+
   const stopSound = async () => {
     if (sound) {
       await sound.stopAsync();
@@ -67,5 +107,5 @@ export const useAudioPlayer = () => {
       : undefined;
   }, [sound]);
 
-  return { playSound, stopSound, isPlaying, currentTrackId };
+  return { playSound, playSoundFromCenter, stopSound, isPlaying, currentTrackId };
 };

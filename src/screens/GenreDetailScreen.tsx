@@ -1,21 +1,17 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   FlatList,
   Image,
   Pressable,
   Alert,
-  Linking,
   TouchableOpacity,
   SafeAreaView,
 } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { useSpotifyApi } from '../hooks/useSpotifyApi';
 import { useAudioPlayer } from '../hooks/useAudioPlayer';
-import { colors } from '../theme/colors';
-import { typography } from '../theme/typography';
 
 export default function GenreDetailScreen() {
   const route = useRoute<any>();
@@ -23,6 +19,7 @@ export default function GenreDetailScreen() {
   const { genreName } = route.params;
   const { artists, tracks, searchGenre } = useSpotifyApi();
   const { playSound, isPlaying, currentTrackId } = useAudioPlayer();
+  const [activeTab, setActiveTab] = useState<'artists' | 'tracks'>('artists');
 
   useEffect(() => {
     if (genreName) {
@@ -33,7 +30,9 @@ export default function GenreDetailScreen() {
 
   useEffect(() => {
     navigation.setOptions({
-      title: genreName ? String(genreName).toUpperCase() : 'Genre',
+      title: '',
+      headerTitle: '',
+      headerBackTitle: '',
     });
   }, [genreName, navigation]);
 
@@ -45,197 +44,93 @@ export default function GenreDetailScreen() {
     await playSound(track.preview_url, track.id);
   };
 
-  const openInSpotify = async (track: any) => {
-    const spotifyUri = `spotify:track:${track.id}`;
-    const spotifyUrl = track.external_urls?.spotify || `https://open.spotify.com/track/${track.id}`;
-
-    try {
-      // Try to open in Spotify app first
-      const canOpen = await Linking.canOpenURL(spotifyUri);
-      if (canOpen) {
-        await Linking.openURL(spotifyUri);
-      } else {
-        // Fallback to web browser
-        await Linking.openURL(spotifyUrl);
-      }
-    } catch (error) {
-      console.error('Error opening Spotify:', error);
-      Alert.alert('Error', 'Could not open Spotify. Please make sure Spotify is installed.');
-    }
-  };
-
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
-        <Text style={styles.genreTitle}>Genre: {genreName}</Text>
-        <View style={styles.listContainer}>
-          <Text style={styles.sectionTitle}>Top Artists</Text>
+    <SafeAreaView className="flex-1 bg-concrete-dark">
+      <View className="flex-1 px-5">
+        {/* Genre Title */}
+        <View className="pt-4 pb-3">
+          <Text className="text-4xl font-black text-white tracking-tighter uppercase leading-none" style={{ fontFamily: 'BlackOpsOne_400Regular' }}>
+            {genreName}
+          </Text>
+          <View className="h-1 w-20 bg-neon-pink mt-3" style={{ shadowColor: '#ff006e', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.8, shadowRadius: 10 }} />
+        </View>
+
+        {/* Tabs */}
+        <View className="flex-row gap-3 my-5">
+          <TouchableOpacity
+            className={`flex-1 py-4 items-center border-4 ${activeTab === 'artists' ? 'bg-neon-green border-black' : 'bg-black border-neon-green'}`}
+            style={activeTab === 'artists' ? { shadowColor: '#39ff14', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.6, shadowRadius: 8 } : undefined}
+            onPress={() => setActiveTab('artists')}
+          >
+            <Text className={`text-base font-black tracking-widest ${activeTab === 'artists' ? 'text-black' : 'text-neon-green'}`} style={{ fontFamily: 'CourierPrime_700Bold' }}>
+              ARTISTS
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            className={`flex-1 py-4 items-center border-4 ${activeTab === 'tracks' ? 'bg-neon-green border-black' : 'bg-black border-neon-green'}`}
+            style={activeTab === 'tracks' ? { shadowColor: '#39ff14', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.6, shadowRadius: 8 } : undefined}
+            onPress={() => setActiveTab('tracks')}
+          >
+            <Text className={`text-base font-black tracking-widest ${activeTab === 'tracks' ? 'text-black' : 'text-neon-green'}`} style={{ fontFamily: 'CourierPrime_700Bold' }}>
+              TRACKS
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Artists Tab */}
+        {activeTab === 'artists' && (
           <FlatList
             data={artists}
             keyExtractor={(item) => item.id}
+            contentContainerStyle={{ paddingBottom: 20 }}
             renderItem={({ item }) => (
-              <View style={styles.listItem}>
-                <Image source={{ uri: item.images[0]?.url }} style={styles.artistImage} />
-                <Text style={styles.itemText}>{item.name}</Text>
+              <View
+                className="flex-row items-center bg-black border-4 border-neon-green p-4 mb-4"
+                style={{ shadowColor: '#39ff14', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 8 }}
+              >
+                <Image source={{ uri: item.images[0]?.url }} className="w-20 h-20 mr-4 border-4 border-white" />
+                <Text className="flex-1 text-white text-lg font-black uppercase tracking-tight" style={{ fontFamily: 'CourierPrime_700Bold' }}>
+                  {item.name}
+                </Text>
               </View>
             )}
           />
-        </View>
-        <View style={styles.listContainer}>
-          <Text style={styles.sectionTitle}>Top Tracks</Text>
+        )}
+
+        {/* Tracks Tab */}
+        {activeTab === 'tracks' && (
           <FlatList
             data={tracks}
             keyExtractor={(item) => item.id}
+            contentContainerStyle={{ paddingBottom: 20 }}
             renderItem={({ item }) => {
               const isCurrentTrack = currentTrackId === item.id;
-              const trackIsPlaying = isCurrentTrack && isPlaying;
 
               return (
-                <View style={styles.trackContainer}>
-                  <Pressable
-                    style={({ pressed }) => [
-                      styles.listItem,
-                      pressed && styles.listItemPressed,
-                      isCurrentTrack && styles.listItemActive,
-                    ]}
-                    onPress={() => handleTrackPress(item)}
-                  >
-                    <Image source={{ uri: item.album.images[0]?.url }} style={styles.albumArt} />
-                    <View style={styles.trackInfo}>
-                      <Text style={[
-                        styles.trackName,
-                        styles.itemText,
-                        isCurrentTrack && styles.activeTrackText
-                      ]}>
-                        {trackIsPlaying ? '▶ ' : ''}{item.name}
-                      </Text>
-                      <Text style={styles.artistName}>
-                        {item.artists.map((artist: any) => artist.name).join(', ')}
-                      </Text>
-                      {!item.preview_url && (
-                        <Text style={styles.noPreviewText}>No Preview Available</Text>
-                      )}
-                    </View>
-                  </Pressable>
-                  <TouchableOpacity
-                    style={styles.spotifyButton}
-                    onPress={() => openInSpotify(item)}
-                  >
-                    <Text style={styles.spotifyButtonText}>🎵</Text>
-                    <Text style={styles.spotifyButtonLabel}>Full Song</Text>
-                  </TouchableOpacity>
-                </View>
+                <Pressable
+                  className={`flex-row items-center bg-black border-4 p-4 mb-4 ${isCurrentTrack ? 'border-neon-green' : 'border-concrete-light'}`}
+                  style={isCurrentTrack ? { shadowColor: '#39ff14', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.6, shadowRadius: 10 } : undefined}
+                  onPress={() => handleTrackPress(item)}
+                >
+                  <Image source={{ uri: item.album.images[0]?.url }} className="w-16 h-16 mr-4 border-3 border-white" />
+                  <View className="flex-1">
+                    <Text className={`text-base font-black mb-1 uppercase tracking-tight ${isCurrentTrack ? 'text-neon-green' : 'text-white'}`} style={{ fontFamily: 'CourierPrime_700Bold' }} numberOfLines={1}>
+                      {item.name}
+                    </Text>
+                    <Text className="text-gray-400 text-xs mb-1 font-bold" style={{ fontFamily: 'CourierPrime_700Bold' }} numberOfLines={1}>
+                      {item.artists?.map((artist: any) => artist.name).join(', ') || 'Unknown Artist'}
+                    </Text>
+                    <Text className="text-gray-600 text-xs" style={{ fontFamily: 'CourierPrime_400Regular' }} numberOfLines={1}>
+                      {item.album.name}
+                    </Text>
+                  </View>
+                </Pressable>
               );
             }}
           />
-        </View>
+        )}
       </View>
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  content: {
-    flex: 1,
-    padding: 20,
-  },
-  genreTitle: {
-    ...typography.h2,
-    color: colors.text,
-    marginBottom: 10,
-  },
-  sectionTitle: {
-    ...typography.h3,
-    color: colors.text,
-    marginBottom: 10,
-  },
-  listContainer: {
-    marginTop: 20,
-    flex: 1,
-  },
-  trackContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  listItem: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 10,
-    borderRadius: 8,
-    backgroundColor: colors.surface,
-    marginBottom: 8,
-  },
-  listItemPressed: {
-    backgroundColor: colors.surfaceLight,
-  },
-  listItemActive: {
-    backgroundColor: 'rgba(139, 92, 246, 0.2)',
-    borderWidth: 1,
-    borderColor: colors.primary,
-  },
-  itemText: {
-    ...typography.body,
-    color: colors.text,
-  },
-  artistImage: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    marginRight: 10,
-  },
-  albumArt: {
-    width: 50,
-    height: 50,
-    marginRight: 10,
-    borderRadius: 4,
-  },
-  trackInfo: {
-    flex: 1,
-  },
-  trackName: {
-    ...typography.bodyMedium,
-    fontWeight: 'bold',
-  },
-  artistName: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
-  },
-  activeTrackText: {
-    color: colors.primary,
-  },
-  noPreviewText: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    fontStyle: 'italic',
-  },
-  spotifyButton: {
-    backgroundColor: '#1DB954', // Spotify green for brand recognition
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 20,
-    marginLeft: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  spotifyButtonText: {
-    fontSize: 18,
-    marginBottom: 2,
-  },
-  spotifyButtonLabel: {
-    ...typography.caption,
-    color: '#FFFFFF',
-    fontWeight: 'bold',
-    fontSize: 9,
-  },
-});

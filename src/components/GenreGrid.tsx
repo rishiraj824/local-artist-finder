@@ -1,11 +1,16 @@
 import { useAudioPlayer } from "../hooks/useAudioPlayer";
 import { useSpotifyApi } from "../hooks/useSpotifyApi";
+import { useAuth } from "../context/AuthContext";
 import React, { useMemo, useState } from "react";
 import { Dimensions, Pressable, StyleSheet, Text, View, TouchableOpacity } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
+  withRepeat,
+  withTiming,
+  Easing,
+  cancelAnimation,
 } from "react-native-reanimated";
 import Svg, { Path, G, Text as SvgText } from "react-native-svg";
 import { useNavigation } from '@react-navigation/native';
@@ -257,6 +262,26 @@ const getGenrePopularity = (genreName: string): number => {
   return GENRE_POPULARITY_MAP[genreName.toLowerCase()] || 5; // Default to 5 (medium)
 };
 
+// Genre aliases - map alternative names to canonical names
+const GENRE_ALIASES: Record<string, string> = {
+  'dnb': 'drum-and-bass',
+  'd&b': 'drum-and-bass',
+  'drum & bass': 'drum-and-bass',
+  'drum and bass': 'drum-and-bass',
+  'breaks': 'breakbeat',
+  'uk garage': 'uk-garage',
+  'garage': 'uk-garage',
+  '2 step': '2-step',
+  'psytrance': 'psychedelic-trance',
+  'goa': 'goa-trance',
+};
+
+// Normalize genre name to its canonical form
+const normalizeGenreName = (genreName: string): string => {
+  const lower = genreName.toLowerCase();
+  return GENRE_ALIASES[lower] || lower;
+};
+
 // Create SVG arc path
 const createArcPath = (
   centerX: number,
@@ -303,14 +328,37 @@ const createSunburstSegments = (
 ): SunburstSegment[] => {
   const segments: SunburstSegment[] = [];
 
+  // Deduplicate genres by name (case-insensitive) and handle aliases
+  const uniqueGenres: Genre[] = [];
+  const seenGenreNames = new Set<string>();
+  genres.forEach(genre => {
+    const normalizedName = normalizeGenreName(genre.name);
+    if (!seenGenreNames.has(normalizedName)) {
+      seenGenreNames.add(normalizedName);
+      // Use the normalized name for the genre
+      uniqueGenres.push({
+        ...genre,
+        name: normalizedName
+      });
+    }
+  });
+
   // Calculate total popularity for each category
   const categoryPopularity: Record<string, number> = {};
   const categoryGenres: Record<string, Genre[]> = {};
+  const assignedGenres = new Set<string>(); // Track which genres have been assigned to a category
 
   Object.keys(GENRE_CATEGORIES).forEach(category => {
-    const genresInCategory = genres.filter(g =>
-      GENRE_CATEGORIES[category].includes(g.name.toLowerCase())
-    );
+    const genresInCategory = uniqueGenres.filter(g => {
+      const lowerName = g.name.toLowerCase();
+      // Only include if not already assigned and matches this category
+      return !assignedGenres.has(lowerName) &&
+             GENRE_CATEGORIES[category].includes(lowerName);
+    });
+
+    // Mark these genres as assigned
+    genresInCategory.forEach(g => assignedGenres.add(g.name.toLowerCase()));
+
     categoryGenres[category] = genresInCategory;
     categoryPopularity[category] = genresInCategory.reduce((sum, g) =>
       sum + getGenrePopularity(g.name), 0
@@ -463,10 +511,14 @@ const SunburstSegmentComponent: React.FC<{
   centerX: number;
   centerY: number;
   isHovered: boolean;
+  isLongPressed: boolean;
+  isDiscovered: boolean;
   onPress: () => void;
   onHoverIn: () => void;
   onHoverOut: () => void;
-}> = ({ segment, centerX, centerY, isHovered, onPress, onHoverIn, onHoverOut }) => {
+  onLongPressStart: () => void;
+  onLongPressEnd: () => void;
+}> = ({ segment, centerX, centerY, isHovered, isLongPressed, isDiscovered, onPress, onHoverIn, onHoverOut, onLongPressStart, onLongPressEnd }) => {
   const path = createArcPath(
     centerX,
     centerY,
@@ -489,13 +541,19 @@ const SunburstSegmentComponent: React.FC<{
   const fontSize = Math.max(8, Math.min(arcLength * 0.2, 14));
 
   return (
-    <G onPress={onPress} onPressIn={onHoverIn} onPressOut={onHoverOut}>
+    <G
+      onPress={onPress}
+      onPressIn={onHoverIn}
+      onPressOut={onHoverOut}
+      onLongPress={onLongPressStart}
+      delayLongPress={500}
+    >
       <Path
         d={path}
         fill={segment.color}
-        opacity={isHovered ? 1 : 0.85}
-        stroke="rgba(0,0,0,0.2)"
-        strokeWidth={1}
+        opacity={isLongPressed ? 1 : isHovered ? 0.95 : isDiscovered ? 1 : 0.3}
+        stroke={isDiscovered ? "#ffffff" : "none"}
+        strokeWidth={isDiscovered ? 1.5 : 0}
       />
       <SvgText
         x={textX}
@@ -508,7 +566,7 @@ const SunburstSegmentComponent: React.FC<{
         rotation={textRotation}
         origin={`${textX}, ${textY}`}
       >
-        {segment.name.toLowerCase()}
+        {segment.category ? segment.name.toLowerCase() : `${segment.name.toLowerCase()} (${getGenreBPM(segment.name)}bpm)`}
       </SvgText>
     </G>
   );
@@ -602,8 +660,23 @@ const GenreGrid: React.FC<GenreGridProps> = ({ genres }) => {
   const maxRadius = containerSize / 2 - 30;
 
   const { getRandomTrack } = useSpotifyApi();
-  const { playSound } = useAudioPlayer();
+  const { playSoundFromCenter, stopSound } = useAudioPlayer();
+  const { user } = useAuth();
   const [hoveredGenre, setHoveredGenre] = useState<string | null>(null);
+  const [longPressedGenre, setLongPressedGenre] = useState<string | null>(null);
+  const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
+
+  // Get user's discovered genres (normalized to lowercase)
+  const discoveredGenres = useMemo(() => {
+    if (!user?.genresDiscovered) return new Set<string>();
+    return new Set(user.genresDiscovered.map(g => g.toLowerCase().trim()));
+  }, [user?.genresDiscovered]);
+
+  // Check if a genre is discovered
+  const isGenreDiscovered = (genreName: string): boolean => {
+    const normalized = normalizeGenreName(genreName);
+    return discoveredGenres.has(normalized);
+  };
 
   // Pan gesture state
   const translateX = useSharedValue(0);
@@ -615,10 +688,59 @@ const GenreGrid: React.FC<GenreGridProps> = ({ genres }) => {
   const scale = useSharedValue(1);
   const savedScale = useSharedValue(1);
 
+  // Rotation state - continuous clockwise rotation
+  const rotation = useSharedValue(0);
+  const [isPaused, setIsPaused] = useState(false);
+
+  // Function to start rotation animation
+  const startRotation = (fromValue: number = 0) => {
+    rotation.value = fromValue;
+    rotation.value = withRepeat(
+      withTiming(fromValue + 360, {
+        duration: 60000, // 60 seconds for one full rotation
+        easing: Easing.linear,
+      }),
+      -1, // Infinite repeat
+      false // Don't reverse
+    );
+  };
+
+  // Start continuous clockwise rotation on mount
+  React.useEffect(() => {
+    startRotation(0);
+  }, []);
+
+  // Pause rotation when long press is active or category is expanded
+  React.useEffect(() => {
+    if (longPressedGenre || expandedCategory) {
+      // Pause: cancel animation but keep current value
+      cancelAnimation(rotation);
+      setIsPaused(true);
+    } else if (isPaused) {
+      // Resume: restart animation from current rotation value
+      const currentRotation = rotation.value;
+      startRotation(currentRotation);
+      setIsPaused(false);
+    }
+  }, [longPressedGenre, expandedCategory]);
+
   // Generate sunburst segments
-  const sunburstSegments = useMemo(() => {
+  const allSunburstSegments = useMemo(() => {
     return createSunburstSegments(genres, 80, maxRadius);
   }, [genres, maxRadius]);
+
+  // Filter segments based on expanded state
+  const sunburstSegments = useMemo(() => {
+    if (!expandedCategory) {
+      // Show only category segments (inner ring)
+      return allSunburstSegments.filter(seg => seg.category === seg.name);
+    } else {
+      // Show expanded category and its sub-genres
+      return allSunburstSegments.filter(
+        seg => seg.category === expandedCategory
+      );
+    }
+  }, [allSunburstSegments, expandedCategory]);
 
   // Pan gesture for dragging the circle
   const panGesture = Gesture.Pan()
@@ -655,21 +777,34 @@ const GenreGrid: React.FC<GenreGridProps> = ({ genres }) => {
         { translateX: translateX.value },
         { translateY: translateY.value },
         { scale: scale.value },
+        { rotate: `${rotation.value}deg` },
       ],
     };
   });
 
-  const handleHover = (genreName: string) => {
-    if (hoveredGenre !== genreName) {
-      setHoveredGenre(genreName);
-      console.log("[GenreGrid] Hovering over genre:", genreName);
-      getRandomTrack(genreName).then((track) => {
-        if (track && track.preview_url) {
-          console.log("[GenreGrid] Playing track:", track.name);
-          playSound(track.preview_url);
-        }
-      });
+  const handleLongPressStart = async (genreName: string) => {
+    setLongPressedGenre(genreName);
+    console.log("[GenreGrid] Long press started on genre:", genreName);
+
+    try {
+      const track = await getRandomTrack(genreName);
+      if (track && track.preview_url) {
+        console.log("[GenreGrid] Playing track from center:", track.name);
+        await playSoundFromCenter(track.preview_url, genreName);
+      }
+    } catch (error) {
+      console.error("[GenreGrid] Error playing track:", error);
     }
+  };
+
+  const handleLongPressEnd = async () => {
+    console.log("[GenreGrid] Long press ended");
+    setLongPressedGenre(null);
+    await stopSound();
+  };
+
+  const handleHover = (genreName: string) => {
+    setHoveredGenre(genreName);
   };
 
   const handleUnhover = () => {
@@ -712,15 +847,44 @@ const GenreGrid: React.FC<GenreGridProps> = ({ genres }) => {
                   centerX={containerSize / 2}
                   centerY={containerSize / 2}
                   isHovered={hoveredGenre === segment.name}
-                  onPress={() => navigation.navigate('GenreDetail', { genreName: segment.name })}
+                  isLongPressed={longPressedGenre === segment.name}
+                  isDiscovered={isGenreDiscovered(segment.name)}
+                  onPress={() => {
+                    // If it's a category, toggle expansion
+                    if (segment.category === segment.name) {
+                      setExpandedCategory(expandedCategory === segment.name ? null : segment.name);
+                    } else {
+                      // If it's a genre, navigate to detail
+                      navigation.navigate('GenreDetail', { genreName: segment.name });
+                    }
+                  }}
                   onHoverIn={() => handleHover(segment.name)}
-                  onHoverOut={handleUnhover}
+                  onHoverOut={() => {
+                    handleUnhover();
+                    if (longPressedGenre === segment.name) {
+                      handleLongPressEnd();
+                    }
+                  }}
+                  onLongPressStart={() => handleLongPressStart(segment.name)}
+                  onLongPressEnd={handleLongPressEnd}
                 />
               ))}
             </G>
           </Svg>
         </Animated.View>
       </GestureDetector>
+
+      {/* Legend */}
+      <View style={styles.legend}>
+        <View style={styles.legendItem}>
+          <View style={[styles.legendSample, styles.legendDiscovered]} />
+          <Text style={styles.legendText}>You've heard this</Text>
+        </View>
+        <View style={styles.legendItem}>
+          <View style={[styles.legendSample, styles.legendUndiscovered]} />
+          <Text style={styles.legendText}>New to you</Text>
+        </View>
+      </View>
     </View>
   );
 };
@@ -779,6 +943,42 @@ const styles = StyleSheet.create({
     color: "#888",
     fontSize: 16,
     fontFamily: "Lato_400Regular",
+  },
+  legend: {
+    position: "absolute",
+    bottom: 20,
+    right: 20,
+    backgroundColor: "rgba(0, 0, 0, 0.8)",
+    borderRadius: 8,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: "#39ff14",
+  },
+  legendItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginVertical: 4,
+  },
+  legendSample: {
+    width: 24,
+    height: 24,
+    borderRadius: 4,
+    marginRight: 8,
+  },
+  legendDiscovered: {
+    backgroundColor: "#ff00ff",
+    opacity: 1,
+    borderWidth: 1.5,
+    borderColor: "#ffffff",
+  },
+  legendUndiscovered: {
+    backgroundColor: "#888",
+    opacity: 0.3,
+  },
+  legendText: {
+    color: "#fff",
+    fontSize: 12,
+    fontFamily: "Lato_700Bold",
   },
 });
 

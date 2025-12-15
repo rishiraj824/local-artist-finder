@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -9,57 +9,106 @@ import {
   Alert,
   ActivityIndicator,
   Image,
-} from 'react-native';
-import { useAuth } from '../context/AuthContext';
-import { useUserPreferences } from '../hooks/useUserPreferences';
-import { userService } from '../services/userService';
-import { colors } from '../theme/colors';
-import { typography } from '../theme/typography';
+  SafeAreaView,
+  Animated,
+} from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
+import { useAuth } from "../context/AuthContext";
+import { useUserPreferences } from "../hooks/useUserPreferences";
+import { userService } from "../services/userService";
+import QRCode from "react-native-qrcode-svg";
+import { Camera, Wifi } from "lucide-react-native";
+import { useNFC } from "../hooks/useNFC";
 
 export default function ProfileScreen() {
-  const { user, signOut, loading: authLoading } = useAuth();
+  const { user, signOut, loading: authLoading, refreshUser } = useAuth();
   const { exploredGenres, savedEvents, favoriteArtists } = useUserPreferences();
-  const [isEditing, setIsEditing] = useState(false);
-  const [displayName, setDisplayName] = useState(user?.displayName || '');
-  const [isSaving, setIsSaving] = useState(false);
+  const navigation = useNavigation<any>();
+  const [showGenreList, setShowGenreList] = useState(false);
+  const { isSupported, isEnabled, readNFC, isReading } = useNFC();
 
-  const handleSaveName = async () => {
-    if (!user) return;
+  // Animation for QR code glow effect
+  const glowAnim = useRef(new Animated.Value(0)).current;
 
-    try {
-      setIsSaving(true);
-      await userService.createOrUpdateUser(user.id, {
-        email: user.email,
-        displayName: displayName.trim(),
-        photoURL: user.photoURL,
-        provider: user.provider,
-        spotifyAccessToken: user.spotifyAccessToken,
-        spotifyRefreshToken: user.spotifyRefreshToken,
-      });
-      setIsEditing(false);
-      Alert.alert('Success', 'Display name updated successfully!');
-    } catch (error) {
-      console.error('Error updating name:', error);
-      Alert.alert('Error', 'Failed to update display name');
-    } finally {
-      setIsSaving(false);
-    }
-  };
+  // Refresh user data every time the screen is focused
+  useFocusEffect(
+    useCallback(() => {
+      console.log('[ProfileScreen] Screen focused, refreshing user data...');
+      refreshUser();
+    }, [refreshUser])
+  );
+
+  // Start glow animation on mount
+  useEffect(() => {
+    const pulse = Animated.loop(
+      Animated.sequence([
+        Animated.timing(glowAnim, {
+          toValue: 1,
+          duration: 2000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(glowAnim, {
+          toValue: 0,
+          duration: 2000,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    pulse.start();
+    return () => pulse.stop();
+  }, []);
 
   const handleSignOut = () => {
+    Alert.alert("Sign Out", "Are you sure you want to sign out?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Sign Out",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await signOut();
+          } catch (error) {
+            Alert.alert("Error", "Failed to sign out");
+          }
+        },
+      },
+    ]);
+  };
+
+  const handleNFCTap = async () => {
+    if (!isSupported) {
+      Alert.alert(
+        'NFC Not Supported',
+        'Your device does not support NFC. Use the QR code scan instead.',
+        [
+          { text: 'OK' },
+          { text: 'Scan QR', onPress: () => navigation.navigate('Scan') },
+        ]
+      );
+      return;
+    }
+
+    if (!isEnabled) {
+      Alert.alert(
+        'NFC Disabled',
+        'Please enable NFC in your device settings to use tap to connect.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
     Alert.alert(
-      'Sign Out',
-      'Are you sure you want to sign out?',
+      'Tap to Connect',
+      'Hold your phone near another device to share your profile and check vibe compatibility.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Sign Out',
-          style: 'destructive',
+          text: 'Start',
           onPress: async () => {
-            try {
-              await signOut();
-            } catch (error) {
-              Alert.alert('Error', 'Failed to sign out');
+            const scannedUserId = await readNFC();
+            if (scannedUserId) {
+              navigation.navigate('VibeCheck', { scannedUserId });
             }
           },
         },
@@ -69,354 +118,391 @@ export default function ProfileScreen() {
 
   if (authLoading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={colors.primary} />
-      </View>
+      <SafeAreaView className="flex-1 bg-concrete-dark justify-center items-center">
+        <ActivityIndicator size="large" color="#39ff14" />
+      </SafeAreaView>
     );
   }
 
   if (!user) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.errorText}>No user data available</Text>
-      </View>
+      <SafeAreaView className="flex-1 bg-concrete-dark justify-center items-center">
+        <Text
+          className="text-base font-bold text-neon-pink"
+          style={{ fontFamily: "Lato_700Bold" }}
+        >
+          No user data available
+        </Text>
+      </SafeAreaView>
     );
   }
 
+  const userInitials = (user.displayName || user.email).charAt(0).toUpperCase();
+  const userId = user.id.substring(0, 10).toUpperCase();
+
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
-      {/* Profile Header */}
-      <View style={styles.header}>
-        {user.photoURL ? (
-          <Image source={{ uri: user.photoURL }} style={styles.avatar} />
-        ) : (
-          <View style={styles.avatarPlaceholder}>
-            <Text style={styles.avatarText}>
-              {(user.displayName || user.email).charAt(0).toUpperCase()}
+    <ScrollView
+      className="flex-1 bg-concrete-dark pb-24"
+      contentContainerStyle={{
+        paddingTop: 48,
+        paddingHorizontal: 16,
+        maxWidth: 448,
+        alignSelf: "center",
+        width: "100%",
+      }}
+    >
+      {/* Backstage Pass Container */}
+      <View
+        className="bg-white p-1 rounded-2xl shadow-2xl"
+        style={{
+          transform: [{ rotate: "1deg" }],
+          shadowColor: "#000",
+          shadowOffset: { width: 0, height: 10 },
+          shadowOpacity: 0.5,
+          shadowRadius: 20,
+          elevation: 10,
+        }}
+      >
+        {/* Lanyard Hole */}
+        <View
+          className="absolute w-4 h-12 bg-black/80 rounded-full"
+          style={{ top: -24, left: "50%", marginLeft: -8, zIndex: 0 }}
+        />
+        <View
+          className="absolute w-12 h-3 bg-gray-300 rounded-full border border-gray-400"
+          style={{
+            top: 16,
+            left: "50%",
+            marginLeft: -24,
+            zIndex: 20,
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.3,
+            shadowRadius: 2,
+          }}
+        />
+
+        {/* Pass Content */}
+        <View className="bg-gray-200 rounded-xl p-6 border-2 border-dashed border-gray-400 relative overflow-hidden">
+          {/* Hologram Effect */}
+          <LinearGradient
+            colors={["transparent", "rgba(0, 240, 255, 0.2)", "transparent"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            className="absolute w-24 h-24"
+            style={{ top: 0, right: 0, transform: [{ rotate: "45deg" }] }}
+          />
+
+          {/* Header */}
+          <View className="text-center mb-6 border-b-4 border-black pb-4">
+            <Text
+              className="text-4xl font-black text-black tracking-tighter"
+              style={{ fontFamily: "BlackOpsOne_400Regular" }}
+            >
+              ACCESS PASS
+            </Text>
+            <Text
+              className="text-xs tracking-widest mt-1 font-bold"
+              style={{ fontFamily: "CourierPrime_700Bold" }}
+            >
+              ALL AREAS // VIP // 2025
             </Text>
           </View>
-        )}
 
-        {isEditing ? (
-          <View style={styles.editContainer}>
-            <TextInput
-              style={styles.nameInput}
-              value={displayName}
-              onChangeText={setDisplayName}
-              placeholder="Enter your name"
-              placeholderTextColor={colors.textSecondary}
-              autoFocus
-            />
-            <View style={styles.editButtons}>
-              <TouchableOpacity
-                style={[styles.button, styles.cancelButton]}
-                onPress={() => {
-                  setDisplayName(user.displayName || '');
-                  setIsEditing(false);
+          {/* User Info */}
+          <View className="flex-row gap-4 mb-6">
+            <View
+              className="w-24 h-24 bg-gray-800 overflow-hidden border-2 border-black"
+              style={{ transform: [{ rotate: "-2deg" }] }}
+            >
+              {user.photoURL ? (
+                <Image
+                  source={{ uri: user.photoURL }}
+                  className="w-full h-full"
+                />
+              ) : (
+                <View className="w-full h-full bg-concrete-mid justify-center items-center">
+                  <Text className="text-4xl font-bold text-white">
+                    {userInitials}
+                  </Text>
+                </View>
+              )}
+            </View>
+            <View className="flex-1 justify-center">
+              <Text
+                className="text-2xl leading-none mb-1 font-black"
+                style={{ fontFamily: "PermanentMarker_400Regular" }}
+              >
+                {user.displayName || "USER"}
+              </Text>
+              <Text
+                className="text-xs text-gray-600 mb-2"
+                style={{ fontFamily: "CourierPrime_400Regular" }}
+              >
+                ID: {userId}
+              </Text>
+              <View
+                className="bg-black px-2 py-1"
+                style={{
+                  transform: [{ rotate: "-1deg" }],
+                  alignSelf: "flex-start",
                 }}
               >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.button, styles.saveButton]}
-                onPress={handleSaveName}
-                disabled={isSaving}
-              >
-                {isSaving ? (
-                  <ActivityIndicator size="small" color="#fff" />
-                ) : (
-                  <Text style={styles.saveButtonText}>Save</Text>
-                )}
-              </TouchableOpacity>
+                <Text
+                  className="text-neon-green text-xs font-bold"
+                  style={{ fontFamily: "CourierPrime_700Bold" }}
+                >
+                  VERIFIED MEMBER
+                </Text>
+              </View>
             </View>
           </View>
-        ) : (
-          <>
-            <Text style={styles.name}>{user.displayName || 'No name set'}</Text>
-            <Text style={styles.email}>{user.email}</Text>
-            <TouchableOpacity
-              style={styles.editNameButton}
-              onPress={() => setIsEditing(true)}
-            >
-              <Text style={styles.editNameButtonText}>Edit Name</Text>
-            </TouchableOpacity>
-          </>
-        )}
 
-        <View style={styles.providerBadge}>
-          <Text style={styles.providerText}>
-            Signed in with {user.provider === 'google' ? 'Google' : 'Spotify'}
-          </Text>
-        </View>
-      </View>
-
-      {/* Stats */}
-      <View style={styles.statsContainer}>
-        <View style={styles.statItem}>
-          <Text style={styles.statValue}>{exploredGenres.length}</Text>
-          <Text style={styles.statLabel}>Genres Explored</Text>
-        </View>
-        <View style={styles.statDivider} />
-        <View style={styles.statItem}>
-          <Text style={styles.statValue}>{savedEvents.length}</Text>
-          <Text style={styles.statLabel}>Saved Events</Text>
-        </View>
-        <View style={styles.statDivider} />
-        <View style={styles.statItem}>
-          <Text style={styles.statValue}>{favoriteArtists.length}</Text>
-          <Text style={styles.statLabel}>Favorite Artists</Text>
-        </View>
-      </View>
-
-      {/* Explored Genres */}
-      {exploredGenres.length > 0 && (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Explored Genres</Text>
-          <View style={styles.genreContainer}>
-            {exploredGenres.map((genre, index) => (
-              <View key={index} style={styles.genreChip}>
-                <Text style={styles.genreText}>{genre}</Text>
+          {/* Stats Grid */}
+          <View className="mb-6" style={{ gap: 12 }}>
+            <View className="flex-row" style={{ gap: 12 }}>
+              <View className="flex-1 border-2 border-black p-2 relative">
+                <View
+                  className="absolute bg-gray-200 px-1"
+                  style={{ top: -12, left: 8 }}
+                >
+                  <Text
+                    className="text-[10px] font-bold"
+                    style={{ fontFamily: "CourierPrime_700Bold" }}
+                  >
+                    GENRES
+                  </Text>
+                </View>
+                <Text
+                  className="text-3xl font-black"
+                  style={{ fontFamily: "BlackOpsOne_400Regular" }}
+                >
+                  {user?.genresDiscoveredCount || exploredGenres.length || 0}
+                </Text>
               </View>
-            ))}
+              <View className="flex-1 border-2 border-black p-2 relative">
+                <View
+                  className="absolute bg-gray-200 px-1"
+                  style={{ top: -12, left: 8 }}
+                >
+                  <Text
+                    className="text-[10px] font-bold"
+                    style={{ fontFamily: "CourierPrime_700Bold" }}
+                  >
+                    EVENTS
+                  </Text>
+                </View>
+                <Text
+                  className="text-3xl font-black"
+                  style={{ fontFamily: "BlackOpsOne_400Regular" }}
+                >
+                  {savedEvents.length || 28}
+                </Text>
+              </View>
+            </View>
+            <View className="border-2 border-black p-2 bg-black relative">
+              <View
+                className="absolute bg-black px-1 border border-white"
+                style={{ top: -12, left: 8 }}
+              >
+                <Text
+                  className="text-[10px] font-bold text-white"
+                  style={{ fontFamily: "CourierPrime_700Bold" }}
+                >
+                  RAVE HOURS
+                </Text>
+              </View>
+              <Text
+                className="text-3xl font-black text-neon-pink"
+                style={{ fontFamily: "BlackOpsOne_400Regular" }}
+              >
+                {savedEvents.length > 0
+                  ? (savedEvents.length * 5.5).toFixed(1)
+                  : "154.0"}
+              </Text>
+            </View>
+          </View>
+
+          {/* Discovered Genres List */}
+          {user?.genresDiscovered && user.genresDiscovered.length > 0 && (
+            <View className="mb-6">
+              <TouchableOpacity
+                onPress={() => setShowGenreList(!showGenreList)}
+                className="border-2 border-black p-3 bg-neon-green relative"
+              >
+                <View
+                  className="absolute bg-neon-green px-1 border border-black"
+                  style={{ top: -12, left: 8 }}
+                >
+                  <Text
+                    className="text-[10px] font-bold"
+                    style={{ fontFamily: "CourierPrime_700Bold" }}
+                  >
+                    MY GENRES
+                  </Text>
+                </View>
+                <Text
+                  className="text-sm font-bold text-center"
+                  style={{ fontFamily: "CourierPrime_700Bold" }}
+                >
+                  {showGenreList ? "HIDE LIST" : "VIEW LIST"} ({user.genresDiscovered.length})
+                </Text>
+              </TouchableOpacity>
+
+              {showGenreList && (
+                <View className="border-2 border-black border-t-0 p-3 bg-gray-100">
+                  <View className="flex-row flex-wrap" style={{ gap: 6 }}>
+                    {user.genresDiscovered.sort().map((genre, index) => (
+                      <View
+                        key={index}
+                        className="bg-black px-2 py-1 rounded"
+                      >
+                        <Text
+                          className="text-[10px] text-neon-green font-bold"
+                          style={{ fontFamily: "CourierPrime_700Bold" }}
+                        >
+                          {genre.toUpperCase()}
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              )}
+            </View>
+          )}
+
+          {/* Animated QR Code with Neon Glow */}
+          <View className="mb-6 items-center">
+            <Text
+              className="text-[10px] font-bold text-center mb-2"
+              style={{ fontFamily: "CourierPrime_700Bold" }}
+            >
+              SCAN TO CONNECT
+            </Text>
+            <Animated.View
+              style={{
+                opacity: glowAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0.6, 1],
+                }),
+                transform: [
+                  {
+                    scale: glowAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [1, 1.02],
+                    }),
+                  },
+                ],
+              }}
+            >
+              <View
+                className="bg-white p-3 border-4 border-black"
+                style={{
+                  shadowColor: "#39ff14",
+                  shadowOffset: { width: 0, height: 0 },
+                  shadowOpacity: 0.8,
+                  shadowRadius: 15,
+                }}
+              >
+                <QRCode value={user.id} size={120} backgroundColor="white" color="black" />
+              </View>
+            </Animated.View>
+            <Text
+              className="text-[8px] text-gray-600 text-center mt-2"
+              style={{ fontFamily: "CourierPrime_400Regular" }}
+            >
+              ID: {userId}
+            </Text>
+          </View>
+
+          {/* Vibe Check Buttons */}
+          <View className="mb-4" style={{ gap: 10 }}>
+            <TouchableOpacity
+              className="bg-neon-green border-4 border-black py-3 flex-row justify-center items-center gap-2"
+              style={{
+                shadowColor: "#39ff14",
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.6,
+                shadowRadius: 8,
+              }}
+              onPress={() => navigation.navigate('Scan')}
+            >
+              <Camera size={20} color="#000" strokeWidth={2.5} />
+              <Text
+                className="text-black text-sm font-black tracking-wide"
+                style={{ fontFamily: "CourierPrime_700Bold" }}
+              >
+                SCAN MODE
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              className="bg-black border-4 border-neon-pink py-3 flex-row justify-center items-center gap-2"
+              style={{
+                shadowColor: "#ff006e",
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.6,
+                shadowRadius: 8,
+              }}
+              onPress={handleNFCTap}
+              disabled={isReading}
+            >
+              {isReading ? (
+                <ActivityIndicator color="#ff006e" />
+              ) : (
+                <Wifi size={20} color="#ff006e" strokeWidth={2.5} />
+              )}
+              <Text
+                className="text-neon-pink text-sm font-black tracking-wide"
+                style={{ fontFamily: "CourierPrime_700Bold" }}
+              >
+                {isReading ? 'READING...' : 'TAP TO VIBE CHECK'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Action Buttons */}
+          <View className="flex-row justify-between items-center pt-2 border-t border-gray-400">
+            <TouchableOpacity
+              className="flex-row items-center gap-2"
+              onPress={() => navigation.navigate('Settings')}
+            >
+              <Text
+                className="text-xs font-bold"
+                style={{ fontFamily: "CourierPrime_700Bold" }}
+              >
+                ⚙️ SETTINGS
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              className="flex-row items-center gap-2"
+              onPress={handleSignOut}
+            >
+              <Text
+                className="text-xs font-bold text-red-600"
+                style={{ fontFamily: "CourierPrime_700Bold" }}
+              >
+                LOGOUT 🚪
+              </Text>
+            </TouchableOpacity>
           </View>
         </View>
-      )}
-
-      {/* Settings */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Settings</Text>
-
-        <TouchableOpacity style={styles.settingItem}>
-          <Text style={styles.settingText}>Notifications</Text>
-          <Text style={styles.settingValue}>Coming Soon</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.settingItem}>
-          <Text style={styles.settingText}>Privacy</Text>
-          <Text style={styles.settingValue}>→</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.settingItem} onPress={handleSignOut}>
-          <Text style={[styles.settingText, styles.signOutText]}>Sign Out</Text>
-        </TouchableOpacity>
       </View>
 
-      {/* App Info */}
-      <View style={styles.footer}>
-        <Text style={styles.footerText}>Local Artist Finder v1.0.0</Text>
-        <Text style={styles.footerText}>Made with ♥ for music lovers</Text>
+      {/* Decorative Stamp */}
+      <View
+        className="absolute w-24 h-24 border-4 border-neon-pink rounded-full opacity-60 items-center justify-center"
+        style={{ top: 80, right: 8, transform: [{ rotate: "12deg" }] }}
+      >
+        <Text
+          className="text-neon-pink text-xs font-black text-center"
+          style={{ fontFamily: "BlackOpsOne_400Regular", maxWidth: 70 }}
+        >
+          APPROVED
+        </Text>
       </View>
     </ScrollView>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  contentContainer: {
-    paddingBottom: 40,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: colors.background,
-  },
-  errorText: {
-    ...typography.body,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    marginTop: 40,
-  },
-  header: {
-    alignItems: 'center',
-    paddingVertical: 32,
-    paddingHorizontal: 24,
-    backgroundColor: colors.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  avatar: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    marginBottom: 16,
-  },
-  avatarPlaceholder: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  avatarText: {
-    fontSize: 40,
-    fontWeight: 'bold',
-    color: '#fff',
-  },
-  name: {
-    ...typography.h2,
-    color: colors.text,
-    marginBottom: 4,
-  },
-  email: {
-    ...typography.body,
-    color: colors.textSecondary,
-    marginBottom: 12,
-  },
-  editNameButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: colors.primary,
-    marginTop: 8,
-  },
-  editNameButtonText: {
-    ...typography.button,
-    color: colors.primary,
-    fontSize: 14,
-  },
-  editContainer: {
-    width: '100%',
-    alignItems: 'center',
-  },
-  nameInput: {
-    ...typography.body,
-    color: colors.text,
-    backgroundColor: colors.background,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    width: '100%',
-    marginBottom: 12,
-  },
-  editButtons: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  button: {
-    paddingHorizontal: 24,
-    paddingVertical: 10,
-    borderRadius: 8,
-    minWidth: 100,
-    alignItems: 'center',
-  },
-  cancelButton: {
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  cancelButtonText: {
-    ...typography.button,
-    color: colors.text,
-    fontSize: 14,
-  },
-  saveButton: {
-    backgroundColor: colors.primary,
-  },
-  saveButtonText: {
-    ...typography.button,
-    color: '#fff',
-    fontSize: 14,
-  },
-  providerBadge: {
-    marginTop: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    backgroundColor: colors.background,
-    borderRadius: 12,
-  },
-  providerText: {
-    ...typography.caption,
-    color: colors.textSecondary,
-  },
-  statsContainer: {
-    flexDirection: 'row',
-    paddingVertical: 24,
-    paddingHorizontal: 24,
-    backgroundColor: colors.surface,
-  },
-  statItem: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  statValue: {
-    ...typography.h2,
-    color: colors.primary,
-    marginBottom: 4,
-  },
-  statLabel: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    textAlign: 'center',
-  },
-  statDivider: {
-    width: 1,
-    backgroundColor: colors.border,
-    marginHorizontal: 16,
-  },
-  section: {
-    marginTop: 24,
-    paddingHorizontal: 24,
-  },
-  sectionTitle: {
-    ...typography.h3,
-    color: colors.text,
-    marginBottom: 16,
-  },
-  genreContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  genreChip: {
-    backgroundColor: colors.surface,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  genreText: {
-    ...typography.caption,
-    color: colors.text,
-  },
-  settingItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    backgroundColor: colors.surface,
-    borderRadius: 12,
-    marginBottom: 8,
-  },
-  settingText: {
-    ...typography.body,
-    color: colors.text,
-  },
-  settingValue: {
-    ...typography.body,
-    color: colors.textSecondary,
-  },
-  signOutText: {
-    color: '#FF6B6B',
-  },
-  footer: {
-    alignItems: 'center',
-    paddingVertical: 32,
-    paddingHorizontal: 24,
-  },
-  footerText: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    marginBottom: 4,
-  },
-});
+const styles = StyleSheet.create({});

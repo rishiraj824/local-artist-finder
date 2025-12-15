@@ -1,6 +1,7 @@
 import React, { memo, useState, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import DropDownPicker from 'react-native-dropdown-picker';
+import { MapPin } from 'lucide-react-native';
 import { colors } from '../theme/colors';
 import { typography, fontSize } from '../theme/typography';
 
@@ -38,7 +39,13 @@ const EventsHeader = memo(({
   }, [availableLocations]);
 
   return (
-    <View style={styles.headerContainer}>
+    <View className="px-5 pt-2 pb-6 bg-concrete-dark" style={{ zIndex: 3000 }}>
+      {/* Title */}
+      <Text className="text-3xl font-black text-white tracking-wider uppercase mb-4" style={{ fontFamily: 'BlackOpsOne_400Regular' }}>
+        DROPS
+      </Text>
+      <View className="h-1 w-16 bg-neon-pink mb-4" style={{ shadowColor: '#ff006e', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.8, shadowRadius: 8 }} />
+
       <View style={styles.searchRow}>
         <View style={styles.dropdownWrapper}>
           <DropDownPicker
@@ -52,9 +59,9 @@ const EventsHeader = memo(({
                 onLocationChange(value);
               }
             }}
-            placeholder="Search city..."
+            placeholder="SEARCH CITY..."
             searchable={true}
-            searchPlaceholder="Type to search..."
+            searchPlaceholder="TYPE TO SEARCH..."
             style={[
               styles.dropdown,
               selectedLocation && styles.dropdownActive
@@ -75,14 +82,12 @@ const EventsHeader = memo(({
         </View>
 
         <TouchableOpacity
-          style={[
-            styles.locationButton,
-            isUsingUserLocation && styles.locationButtonDisabled,
-          ]}
+          className={`w-12 justify-center items-center border-2 ${isUsingUserLocation ? 'bg-concrete-mid border-concrete-light opacity-50' : 'bg-neon-pink border-neon-pink'}`}
+          style={isUsingUserLocation ? { height: 48 } : { height: 48, shadowColor: '#ff006e', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.6, shadowRadius: 8 }}
           onPress={onUseMyLocation}
           disabled={isUsingUserLocation}
         >
-          <Text style={styles.locationButtonText}>📍</Text>
+          <MapPin size={20} color={isUsingUserLocation ? '#666' : '#000'} strokeWidth={3} />
         </TouchableOpacity>
       </View>
     </View>
@@ -92,13 +97,6 @@ const EventsHeader = memo(({
 EventsHeader.displayName = 'EventsHeader';
 
 const styles = StyleSheet.create({
-  headerContainer: {
-    padding: 16,
-    paddingTop: 8,
-    paddingBottom: 24,
-    backgroundColor: colors.background,
-    zIndex: 3000,
-  },
   searchRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -110,80 +108,73 @@ const styles = StyleSheet.create({
     zIndex: 3000,
   },
   dropdown: {
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surfaceElevated,
-    minHeight: 50,
+    borderRadius: 0,
+    borderWidth: 2,
+    borderColor: '#3a3a3a',
+    backgroundColor: '#2a2a2a',
+    minHeight: 48,
   },
   dropdownActive: {
     borderWidth: 2,
-    borderColor: colors.primary,
-    backgroundColor: colors.surfaceLight,
+    borderColor: '#39ff14',
+    backgroundColor: '#2a2a2a',
   },
   dropdownText: {
-    ...typography.body,
-    color: colors.text,
+    fontFamily: 'CourierPrime_700Bold',
+    fontSize: 14,
+    color: '#fff',
+    fontWeight: '700',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
   },
   dropDownContainer: {
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderWidth: 1,
-    borderRadius: 8,
+    backgroundColor: '#1a1a1a',
+    borderColor: '#3a3a3a',
+    borderWidth: 2,
+    borderRadius: 0,
     marginTop: 4,
   },
   searchContainer: {
-    borderBottomColor: colors.border,
-    borderBottomWidth: 1,
+    borderBottomColor: '#3a3a3a',
+    borderBottomWidth: 2,
     paddingHorizontal: 12,
     paddingVertical: 8,
+    backgroundColor: '#2a2a2a',
   },
   searchInput: {
-    ...typography.body,
-    color: colors.text,
-    borderColor: colors.border,
-    backgroundColor: colors.surfaceElevated,
+    fontFamily: 'CourierPrime_700Bold',
+    fontSize: 14,
+    color: '#fff',
+    borderColor: '#3a3a3a',
+    backgroundColor: '#2a2a2a',
+    letterSpacing: 1,
   },
   placeholderStyle: {
-    color: colors.textSecondary,
-    ...typography.body,
+    color: '#666',
+    fontFamily: 'CourierPrime_700Bold',
+    fontSize: 14,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
   },
   listItemContainer: {
     paddingVertical: 12,
     paddingHorizontal: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#3a3a3a',
   },
   listItemLabel: {
-    ...typography.body,
-    color: colors.text,
+    fontFamily: 'CourierPrime_400Regular',
+    fontSize: 14,
+    color: '#fff',
+    letterSpacing: 0.5,
   },
   selectedItemContainer: {
-    backgroundColor: colors.primary + '20',
+    backgroundColor: '#39ff14' + '30',
   },
   selectedItemLabel: {
-    color: colors.primary,
-    fontWeight: '600',
-  },
-  locationButton: {
-    width: 50,
-    height: 50,
-    backgroundColor: colors.secondary,
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: colors.secondaryHover,
-    shadowColor: colors.secondary,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  locationButtonDisabled: {
-    backgroundColor: colors.surface,
-    opacity: 0.5,
-  },
-  locationButtonText: {
-    fontSize: 22,
+    color: '#39ff14',
+    fontFamily: 'CourierPrime_700Bold',
+    fontWeight: '700',
   },
 });
 

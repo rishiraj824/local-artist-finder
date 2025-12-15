@@ -434,5 +434,176 @@ export const useSpotifyApi = () => {
     }
   }, [accessToken, getAccessToken]);
 
-  return { getAccessToken, getGenreSeeds, getRandomTrack, artists, tracks, searchGenre };
+  const getFollowedArtists = useCallback(async (userAccessToken: string): Promise<any[]> => {
+    console.log('[useSpotifyApi] getFollowedArtists called');
+
+    try {
+      const allArtists: any[] = [];
+      let nextUrl: string | null = 'https://api.spotify.com/v1/me/following?type=artist&limit=50';
+
+      // Paginate through all followed artists
+      while (nextUrl) {
+        const response = await fetch(nextUrl, {
+          headers: {
+            'Authorization': `Bearer ${userAccessToken}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('[useSpotifyApi] Failed to get followed artists:', response.status, errorText);
+
+          if (response.status === 401) {
+            throw new Error('Unauthorized - token may be expired');
+          }
+          break;
+        }
+
+        const data = await response.json();
+        allArtists.push(...data.artists.items);
+        nextUrl = data.artists.next;
+
+        console.log('[useSpotifyApi] Fetched', data.artists.items.length, 'artists, total:', allArtists.length);
+      }
+
+      console.log('[useSpotifyApi] Total followed artists:', allArtists.length);
+      return allArtists;
+    } catch (error) {
+      console.error('[useSpotifyApi] Error fetching followed artists:', error);
+      throw error;
+    }
+  }, []);
+
+  const calculateGenresDiscovered = useCallback((artists: any[]): { genres: string[], count: number } => {
+    console.log('[useSpotifyApi] Calculating genres discovered from', artists.length, 'artists');
+
+    const genresSet = new Set<string>();
+
+    for (const artist of artists) {
+      if (artist.genres && Array.isArray(artist.genres)) {
+        artist.genres.forEach((genre: string) => {
+          // Normalize genre names (lowercase, trim)
+          const normalizedGenre = genre.toLowerCase().trim();
+          genresSet.add(normalizedGenre);
+        });
+      }
+    }
+
+    const uniqueGenres = Array.from(genresSet);
+    console.log('[useSpotifyApi] Discovered', uniqueGenres.length, 'unique genres');
+
+    return {
+      genres: uniqueGenres,
+      count: uniqueGenres.length,
+    };
+  }, []);
+
+  const getSavedTracks = useCallback(async (userAccessToken: string, limit: number = 50): Promise<any[]> => {
+    console.log('[useSpotifyApi] Fetching saved tracks...');
+    try {
+      const allTracks: any[] = [];
+      let nextUrl: string | null = `https://api.spotify.com/v1/me/tracks?limit=${limit}`;
+
+      while (nextUrl && allTracks.length < 500) { // Limit to 500 tracks max
+        const response = await fetch(nextUrl, {
+          headers: {
+            'Authorization': `Bearer ${userAccessToken}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch saved tracks: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        allTracks.push(...data.items);
+        nextUrl = data.next;
+
+        console.log(`[useSpotifyApi] Fetched ${allTracks.length} saved tracks so far...`);
+      }
+
+      console.log(`[useSpotifyApi] Total saved tracks fetched: ${allTracks.length}`);
+      return allTracks;
+    } catch (error) {
+      console.error('[useSpotifyApi] Error fetching saved tracks:', error);
+      throw error;
+    }
+  }, []);
+
+  const calculateGenresFromTracks = useCallback(async (tracks: any[], userAccessToken: string): Promise<{ genres: string[], count: number }> => {
+    console.log('[useSpotifyApi] Calculating genres from tracks...');
+    const genresSet = new Set<string>();
+    const uniqueArtistIds = new Set<string>();
+
+    // Collect all unique artist IDs from tracks
+    for (const item of tracks) {
+      const track = item.track;
+      if (track && track.artists && Array.isArray(track.artists)) {
+        for (const artist of track.artists) {
+          if (artist.id) {
+            uniqueArtistIds.add(artist.id);
+          }
+        }
+      }
+    }
+
+    console.log(`[useSpotifyApi] Found ${uniqueArtistIds.size} unique artists in saved tracks`);
+
+    // Fetch artist details in batches of 50 (Spotify API limit)
+    const artistIds = Array.from(uniqueArtistIds);
+    for (let i = 0; i < artistIds.length; i += 50) {
+      const batch = artistIds.slice(i, i + 50);
+      const idsParam = batch.join(',');
+
+      try {
+        const response = await fetch(`https://api.spotify.com/v1/artists?ids=${idsParam}`, {
+          headers: {
+            'Authorization': `Bearer ${userAccessToken}`,
+          },
+        });
+
+        if (!response.ok) {
+          console.error(`[useSpotifyApi] Failed to fetch artists batch ${i / 50 + 1}`);
+          continue;
+        }
+
+        const data = await response.json();
+        if (data.artists && Array.isArray(data.artists)) {
+          for (const artist of data.artists) {
+            if (artist && artist.genres && Array.isArray(artist.genres)) {
+              artist.genres.forEach((genre: string) => {
+                genresSet.add(genre.toLowerCase().trim());
+              });
+            }
+          }
+        }
+
+        console.log(`[useSpotifyApi] Processed batch ${i / 50 + 1}, total genres so far: ${genresSet.size}`);
+      } catch (error) {
+        console.error(`[useSpotifyApi] Error fetching artist batch:`, error);
+      }
+    }
+
+    const uniqueGenres = Array.from(genresSet);
+    console.log(`[useSpotifyApi] Found ${uniqueGenres.length} unique genres from tracks`);
+
+    return {
+      genres: uniqueGenres,
+      count: uniqueGenres.length,
+    };
+  }, []);
+
+  return {
+    getAccessToken,
+    getGenreSeeds,
+    getRandomTrack,
+    artists,
+    tracks,
+    searchGenre,
+    getFollowedArtists,
+    calculateGenresDiscovered,
+    getSavedTracks,
+    calculateGenresFromTracks,
+  };
 };

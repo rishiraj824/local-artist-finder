@@ -80,6 +80,7 @@ export type RootStackParamList = {
   GenreDetail: {
     genreName: string;
   };
+  Settings: undefined;
 };
 
 // Extended Event with Tracks
@@ -117,6 +118,10 @@ export interface User {
   provider: 'google' | 'spotify';
   spotifyAccessToken?: string;
   spotifyRefreshToken?: string;
+  spotifyFollowedArtistsCount?: number;
+  genresDiscovered?: string[];
+  genresDiscoveredCount?: number;
+  lastSpotifySync?: Date;
   createdAt: Date;
   updatedAt: Date;
   preferences: UserPreferences;

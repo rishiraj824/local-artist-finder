@@ -73,6 +73,10 @@ class UserService {
         provider: data.provider,
         spotifyAccessToken: data.spotifyAccessToken,
         spotifyRefreshToken: data.spotifyRefreshToken,
+        spotifyFollowedArtistsCount: data.spotifyFollowedArtistsCount,
+        genresDiscovered: data.genresDiscovered,
+        genresDiscoveredCount: data.genresDiscoveredCount,
+        lastSpotifySync: (data.lastSpotifySync as Timestamp)?.toDate(),
         createdAt: (data.createdAt as Timestamp)?.toDate() || new Date(),
         updatedAt: (data.updatedAt as Timestamp)?.toDate() || new Date(),
         preferences: data.preferences || {
@@ -85,6 +89,11 @@ class UserService {
       console.error('Error getting user:', error);
       throw error;
     }
+  }
+
+  // Alias for getUser (for clarity when fetching by ID)
+  async getUserById(userId: string): Promise<User | null> {
+    return this.getUser(userId);
   }
 
   // Add explored genre
@@ -182,6 +191,54 @@ class UserService {
       await updateDoc(userRef, updateData);
     } catch (error) {
       console.error('Error updating Spotify tokens:', error);
+      throw error;
+    }
+  }
+
+  // Update genres discovered
+  async updateGenresDiscovered(
+    userId: string,
+    genres: string[],
+    count: number
+  ): Promise<void> {
+    try {
+      const userRef = doc(db, this.USERS_COLLECTION, userId);
+      await updateDoc(userRef, {
+        genresDiscovered: genres,
+        genresDiscoveredCount: count,
+        updatedAt: serverTimestamp(),
+      });
+      console.log('[userService] Updated genres discovered:', count, 'genres');
+    } catch (error) {
+      console.error('Error updating genres discovered:', error);
+      throw error;
+    }
+  }
+
+  // Sync followed artists and calculate genres
+  async syncSpotifyData(
+    userId: string,
+    followedArtists: any[],
+    genresDiscovered: string[]
+  ): Promise<void> {
+    try {
+      const userRef = doc(db, this.USERS_COLLECTION, userId);
+      await updateDoc(userRef, {
+        spotifyFollowedArtistsCount: followedArtists.length,
+        genresDiscovered,
+        genresDiscoveredCount: genresDiscovered.length,
+        lastSpotifySync: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+      console.log(
+        '[userService] Synced Spotify data:',
+        followedArtists.length,
+        'artists,',
+        genresDiscovered.length,
+        'genres'
+      );
+    } catch (error) {
+      console.error('Error syncing Spotify data:', error);
       throw error;
     }
   }

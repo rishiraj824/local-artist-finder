@@ -1,29 +1,37 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   View,
   Text,
-  StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
   Alert,
+  StyleSheet,
+  ScrollView,
   Image,
-} from 'react-native';
-import { useAuth } from '../context/AuthContext';
-import { colors } from '../theme/colors';
-import { typography } from '../theme/typography';
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { LinearGradient } from "expo-linear-gradient";
+import MaskedView from "@react-native-masked-view/masked-view";
+import { Music, Calendar, Star } from "lucide-react-native";
+import { useAuth } from "../context/AuthContext";
 
 export default function LoginScreen() {
   const { signInWithGoogle, signInWithSpotify } = useAuth();
   const [loading, setLoading] = useState(false);
-  const [loadingProvider, setLoadingProvider] = useState<'google' | 'spotify' | null>(null);
+  const [loadingProvider, setLoadingProvider] = useState<
+    "google" | "spotify" | null
+  >(null);
 
   const handleGoogleSignIn = async () => {
     try {
       setLoading(true);
-      setLoadingProvider('google');
+      setLoadingProvider("google");
       await signInWithGoogle();
     } catch (error: any) {
-      Alert.alert('Sign In Error', error.message || 'Failed to sign in with Google');
+      Alert.alert(
+        "Sign In Error",
+        error.message || "Failed to sign in with Google"
+      );
     } finally {
       setLoading(false);
       setLoadingProvider(null);
@@ -33,10 +41,13 @@ export default function LoginScreen() {
   const handleSpotifySignIn = async () => {
     try {
       setLoading(true);
-      setLoadingProvider('spotify');
+      setLoadingProvider("spotify");
       await signInWithSpotify();
     } catch (error: any) {
-      Alert.alert('Sign In Error', error.message || 'Failed to sign in with Spotify');
+      Alert.alert(
+        "Sign In Error",
+        error.message || "Failed to sign in with Spotify"
+      );
     } finally {
       setLoading(false);
       setLoadingProvider(null);
@@ -44,165 +55,230 @@ export default function LoginScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.content}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Local Artist Finder</Text>
-          <Text style={styles.subtitle}>
-            Discover local music events and explore new genres
+    <SafeAreaView className="flex-1 bg-concrete-dark">
+      {/* Grid Background */}
+      <View style={StyleSheet.absoluteFill} className="opacity-5">
+        <View style={styles.gridHorizontal} />
+        <View style={styles.gridVertical} />
+      </View>
+
+      <ScrollView
+        className="flex-1 px-6"
+        contentContainerStyle={{ paddingTop: 20, paddingBottom: 20 }}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Header with Gradient Text */}
+        <View className="items-center">
+          <MaskedView
+            maskElement={
+              <View style={{ backgroundColor: "transparent" }}>
+                <Text
+                  className="text-6xl font-black tracking-tighter lowercase"
+                  style={{
+                    fontFamily: "BlackOpsOne_400Regular",
+                    transform: [{ scaleY: 1.3 }],
+                  }}
+                >
+                  drops
+                </Text>
+              </View>
+            }
+          >
+            <LinearGradient
+              colors={["#ff006e", "#39ff14", "#00f0ff", "#ffff00"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={{ flex: 1 }}
+            >
+              <Text
+                className="text-6xl font-black tracking-tighter lowercase opacity-0"
+                style={{
+                  fontFamily: "BlackOpsOne_400Regular",
+                  transform: [{ scaleY: 1.3 }],
+                }}
+              >
+                drops
+              </Text>
+            </LinearGradient>
+          </MaskedView>
+
+          {/* Dripping effect lines */}
+          <View className="flex-row justify-center gap-2">
+            <View
+              className="w-1 h-6 bg-neon-green"
+              style={{
+                shadowColor: "#39ff14",
+                shadowOffset: { width: 0, height: 0 },
+                shadowOpacity: 0.8,
+                shadowRadius: 8,
+              }}
+            />
+            <View
+              className="w-1 h-8 bg-neon-pink"
+              style={{
+                shadowColor: "#ff006e",
+                shadowOffset: { width: 0, height: 0 },
+                shadowOpacity: 0.8,
+                shadowRadius: 8,
+              }}
+            />
+            <View
+              className="w-1 h-4 bg-neon-blue"
+              style={{
+                shadowColor: "#00f0ff",
+                shadowOffset: { width: 0, height: 0 },
+                shadowOpacity: 0.8,
+                shadowRadius: 8,
+              }}
+            />
+            <View
+              className="w-1 h-7 bg-yellow-300"
+              style={{
+                shadowColor: "#ffff00",
+                shadowOffset: { width: 0, height: 0 },
+                shadowOpacity: 0.8,
+                shadowRadius: 8,
+              }}
+            />
+          </View>
+
+          <Text
+            className="text-sm text-gray-400 text-center mt-1 tracking-wide px-8"
+            style={{ fontFamily: "CourierPrime_400Regular" }}
+          >
+            catch the freshest beats • explore • vibe
           </Text>
         </View>
 
-        <View style={styles.benefitsContainer}>
-          <View style={styles.benefitItem}>
-            <Text style={styles.benefitIcon}>🎵</Text>
-            <Text style={styles.benefitText}>Track explored genres</Text>
+        {/* Benefits */}
+        <View className="mb-3 gap-2">
+          <View className="flex-row items-center px-4 py-2 bg-concrete-mid border-l-4 border-neon-green">
+            <Music size={24} color="#39ff14" strokeWidth={2.5} />
+            <Text
+              className="ml-4 text-white text-sm font-bold tracking-wide"
+              style={{ fontFamily: "CourierPrime_700Bold" }}
+            >
+              TRACK EXPLORED GENRES
+            </Text>
           </View>
-          <View style={styles.benefitItem}>
-            <Text style={styles.benefitIcon}>📅</Text>
-            <Text style={styles.benefitText}>Save events you want to attend</Text>
+
+          <View className="flex-row items-center px-4 py-2 bg-concrete-mid border-l-4 border-neon-pink">
+            <Calendar size={24} color="#ff006e" strokeWidth={2.5} />
+            <Text
+              className="ml-4 text-white text-sm font-bold tracking-wide"
+              style={{ fontFamily: "CourierPrime_700Bold" }}
+            >
+              SAVE EVENTS TO ATTEND
+            </Text>
           </View>
-          <View style={styles.benefitItem}>
-            <Text style={styles.benefitIcon}>⭐</Text>
-            <Text style={styles.benefitText}>Build your favorite artists collection</Text>
+
+          <View className="flex-row items-center px-4 py-2 bg-concrete-mid border-l-4 border-neon-blue">
+            <Star size={24} color="#00f0ff" strokeWidth={2.5} />
+            <Text
+              className="ml-4 text-white text-sm font-bold tracking-wide"
+              style={{ fontFamily: "CourierPrime_700Bold" }}
+            >
+              BUILD ARTIST COLLECTION
+            </Text>
           </View>
         </View>
 
-        <View style={styles.buttonContainer}>
+        {/* Login Buttons */}
+        <View className="gap-3 mb-2">
           <TouchableOpacity
-            style={[styles.button, styles.googleButton]}
+            className="bg-white py-3 px-6 border-2 border-black flex-row items-center justify-center gap-3"
+            style={{
+              shadowColor: "#fff",
+              shadowOffset: { width: 0, height: 6 },
+              shadowOpacity: 0.3,
+              shadowRadius: 8,
+            }}
             onPress={handleGoogleSignIn}
             disabled={loading}
           >
-            {loadingProvider === 'google' ? (
+            {loadingProvider === "google" ? (
               <ActivityIndicator color="#000" />
             ) : (
               <>
-                <View style={styles.iconContainer}>
-                  <Text style={styles.googleIcon}>G</Text>
-                </View>
-                <Text style={styles.googleButtonText}>Continue with Google</Text>
+                <Image
+                  source={{ uri: 'https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg' }}
+                  style={{ width: 20, height: 20 }}
+                  resizeMode="contain"
+                />
+                <Text
+                  className="text-black text-base font-black uppercase tracking-wide"
+                  style={{ fontFamily: "CourierPrime_700Bold" }}
+                >
+                  CONTINUE WITH GOOGLE
+                </Text>
               </>
             )}
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.button, styles.spotifyButton]}
+            className="bg-neon-green py-3 px-6 border-2 border-black flex-row items-center justify-center gap-3"
+            style={{
+              shadowColor: "#39ff14",
+              shadowOffset: { width: 0, height: 6 },
+              shadowOpacity: 0.6,
+              shadowRadius: 12,
+            }}
             onPress={handleSpotifySignIn}
             disabled={loading}
           >
-            {loadingProvider === 'spotify' ? (
-              <ActivityIndicator color="#fff" />
+            {loadingProvider === "spotify" ? (
+              <ActivityIndicator color="#000" />
             ) : (
               <>
-                <View style={styles.iconContainer}>
-                  <Text style={styles.spotifyIcon}>♪</Text>
-                </View>
-                <Text style={styles.spotifyButtonText}>Continue with Spotify</Text>
+                <Image
+                  source={{ uri: 'https://upload.wikimedia.org/wikipedia/commons/8/84/Spotify_icon.svg' }}
+                  style={{ width: 24, height: 24 }}
+                  resizeMode="contain"
+                />
+                <Text
+                  className="text-black text-base font-black uppercase tracking-wide"
+                  style={{ fontFamily: "CourierPrime_700Bold" }}
+                >
+                  CONTINUE WITH SPOTIFY
+                </Text>
               </>
             )}
           </TouchableOpacity>
         </View>
 
-        <Text style={styles.disclaimer}>
+        {/* Disclaimer */}
+        <Text
+          className="text-gray-500 text-xs text-center tracking-wide px-8"
+          style={{ fontFamily: "CourierPrime_400Regular" }}
+        >
           By continuing, you agree to track your music exploration journey
         </Text>
-      </View>
-    </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
+  gridHorizontal: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "transparent",
+    borderTopWidth: 2,
+    borderTopColor: "#fff",
+    borderStyle: "solid",
   },
-  content: {
-    flex: 1,
-    justifyContent: 'center',
-    paddingHorizontal: 24,
-  },
-  header: {
-    alignItems: 'center',
-    marginBottom: 48,
-  },
-  title: {
-    ...typography.h1,
-    color: colors.text,
-    marginBottom: 12,
-    textAlign: 'center',
-  },
-  subtitle: {
-    ...typography.body,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    paddingHorizontal: 24,
-  },
-  benefitsContainer: {
-    marginBottom: 48,
-  },
-  benefitItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-    paddingHorizontal: 8,
-  },
-  benefitIcon: {
-    fontSize: 24,
-    marginRight: 16,
-  },
-  benefitText: {
-    ...typography.body,
-    color: colors.text,
-    flex: 1,
-  },
-  buttonContainer: {
-    gap: 16,
-  },
-  button: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 24,
-    borderRadius: 12,
-    gap: 12,
-  },
-  googleButton: {
-    backgroundColor: '#fff',
-  },
-  googleButtonText: {
-    ...typography.button,
-    color: '#000',
-  },
-  spotifyButton: {
-    backgroundColor: '#1DB954',
-  },
-  spotifyButtonText: {
-    ...typography.button,
-    color: '#fff',
-  },
-  iconContainer: {
-    width: 24,
-    height: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  googleIcon: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#4285F4',
-  },
-  spotifyIcon: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#fff',
-  },
-  disclaimer: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    marginTop: 24,
-    paddingHorizontal: 24,
+  gridVertical: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "transparent",
+    borderLeftWidth: 2,
+    borderLeftColor: "#fff",
+    borderStyle: "solid",
   },
 });

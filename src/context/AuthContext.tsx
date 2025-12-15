@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, ReactNode } from 'react';
 import { User as FirebaseUser } from 'firebase/auth';
 import { authService } from '../services/authService';
 import { userService } from '../services/userService';
@@ -11,6 +11,7 @@ interface AuthContextType {
   signInWithGoogle: () => Promise<void>;
   signInWithSpotify: () => Promise<void>;
   signOut: () => Promise<void>;
+  refreshUser: () => Promise<void>;
   isAuthenticated: boolean;
 }
 
@@ -171,6 +172,28 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   };
 
+  const refreshUser = useCallback(async () => {
+    if (!user) return;
+
+    try {
+      console.log('[AuthContext] Refreshing user data...');
+      const refreshedUser = await userService.getUser(user.id);
+      if (refreshedUser) {
+        setUser(refreshedUser);
+
+        // Update AsyncStorage if it's a Spotify user
+        if (refreshedUser.provider === 'spotify') {
+          const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+          await AsyncStorage.setItem('spotifyUser', JSON.stringify(refreshedUser));
+        }
+
+        console.log('[AuthContext] User data refreshed, genres discovered:', refreshedUser.genresDiscoveredCount);
+      }
+    } catch (error) {
+      console.error('[AuthContext] Error refreshing user:', error);
+    }
+  }, [user?.id]);
+
   const value = {
     firebaseUser,
     user,
@@ -178,6 +201,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     signInWithGoogle,
     signInWithSpotify,
     signOut,
+    refreshUser,
     isAuthenticated: !!user,
   };
 

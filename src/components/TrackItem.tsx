@@ -2,13 +2,12 @@ import React from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   TouchableOpacity,
   Image,
   Linking,
 } from 'react-native';
+import { ExternalLink } from 'lucide-react-native';
 import { MusicTrack } from '../types';
-import { colors } from '../theme/colors';
 
 interface TrackItemProps {
   track: MusicTrack;
@@ -35,113 +34,53 @@ export default function TrackItem({
   };
 
   return (
-    <View style={styles.container}>
-      <TouchableOpacity
-        style={styles.playButton}
-        onPress={isPlaying ? onStop : onPlay}
-        disabled={!track.previewUrl}
-      >
-        <Text style={styles.playIcon}>{isPlaying ? '⏸' : '▶️'}</Text>
-      </TouchableOpacity>
-
+    <View className="flex-row items-center bg-concrete-mid border-2 border-concrete-light p-3 mb-3">
+      {/* Album Art */}
       {track.imageUrl && (
-        <Image source={{ uri: track.imageUrl }} style={styles.artwork} />
+        <Image
+          source={{ uri: track.imageUrl }}
+          className="w-12 h-12 mr-3 border-2 border-gray-600"
+        />
       )}
 
-      <View style={styles.info}>
-        <Text style={styles.title} numberOfLines={1}>
-          {track.title}
+      {/* Track Info */}
+      <View className="flex-1">
+        <Text
+          className="text-white text-sm font-black mb-1"
+          style={{ fontFamily: 'CourierPrime_700Bold' }}
+          numberOfLines={1}
+        >
+          {track.title.toUpperCase()}
         </Text>
-        <Text style={styles.artist} numberOfLines={1}>
+        <Text
+          className="text-gray-400 text-xs mb-1"
+          style={{ fontFamily: 'CourierPrime_400Regular' }}
+          numberOfLines={1}
+        >
           {track.artist}
         </Text>
-        <View style={styles.metadata}>
-          <Text style={styles.source}>{track.source.toUpperCase()}</Text>
-          <Text style={styles.duration}>{formatDuration(track.duration)}</Text>
+        <View className="flex-row items-center gap-2">
+          <Text className="text-gray-500 text-[10px]" style={{ fontFamily: 'CourierPrime_400Regular' }}>
+            {formatDuration(track.duration)}
+          </Text>
           {track.popularity !== undefined && track.popularity > 0 && (
-            <Text style={styles.popularity}>
-              {track.source === 'spotify' ? '🔥' : '👂'} {track.popularity > 1000 ? `${Math.floor(track.popularity / 1000)}k` : track.popularity}
-            </Text>
+            <View className="flex-row items-center gap-1">
+              <Text className="text-neon-pink text-[10px]">🔥</Text>
+              <Text className="text-neon-pink text-[10px] font-bold" style={{ fontFamily: 'CourierPrime_700Bold' }}>
+                {track.popularity > 1000 ? `${Math.floor(track.popularity / 1000)}k` : track.popularity}
+              </Text>
+            </View>
           )}
         </View>
       </View>
 
-      <TouchableOpacity style={styles.linkButton} onPress={handleOpenExternal}>
-        <Text style={styles.linkIcon}>🔗</Text>
+      {/* External Link */}
+      <TouchableOpacity
+        className="w-10 h-10 justify-center items-center bg-black border-2 border-gray-600"
+        onPress={handleOpenExternal}
+      >
+        <ExternalLink size={16} color="#39ff14" strokeWidth={2.5} />
       </TouchableOpacity>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.surfaceLight,
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  playButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  playIcon: {
-    fontSize: 16,
-  },
-  artwork: {
-    width: 50,
-    height: 50,
-    borderRadius: 4,
-    marginRight: 12,
-    backgroundColor: colors.surface,
-  },
-  info: {
-    flex: 1,
-    justifyContent: 'center',
-  },
-  title: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.text,
-    marginBottom: 4,
-  },
-  artist: {
-    fontSize: 12,
-    color: colors.textSecondary,
-    marginBottom: 4,
-  },
-  metadata: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  source: {
-    fontSize: 10,
-    color: colors.primary,
-    fontWeight: '600',
-  },
-  duration: {
-    fontSize: 10,
-    color: colors.textTertiary,
-  },
-  popularity: {
-    fontSize: 10,
-    color: colors.secondary,
-    fontWeight: '600',
-  },
-  linkButton: {
-    padding: 8,
-    marginLeft: 8,
-  },
-  linkIcon: {
-    fontSize: 20,
-  },
-});

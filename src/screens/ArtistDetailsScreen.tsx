@@ -7,15 +7,15 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   Linking,
-  SafeAreaView,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { RootStackParamList, MusicTrack } from "../types";
 import { musicService } from "../services/musicService";
 import { colors } from "../theme/colors";
 import { commonStyles } from "../theme/styles";
 import TrackItem from "../components/TrackItem";
-import { Audio } from "expo-av";
+import { Audio } from "expo-audio";
 
 type Props = NativeStackScreenProps<RootStackParamList, "ArtistDetails">;
 

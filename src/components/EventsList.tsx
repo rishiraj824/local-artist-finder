@@ -48,8 +48,10 @@ const EventsList = memo(({
 
   const renderSectionHeader = useCallback(
     ({ section }: { section: { title: string } }) => (
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionHeaderText}>{section.title}</Text>
+      <View className="bg-concrete-dark px-4 py-3 pb-4 border-b-2 border-neon-green mb-2">
+        <Text className="text-white text-xl font-black uppercase tracking-wide" style={{ fontFamily: 'BlackOpsOne_400Regular' }}>
+          {section.title}
+        </Text>
       </View>
     ),
     []
@@ -66,8 +68,8 @@ const EventsList = memo(({
     }
 
     return (
-      <View style={styles.emptyContainer}>
-        <Text style={styles.emptyText}>
+      <View className="p-8 items-center">
+        <Text className="text-gray-400 text-base text-center tracking-wide" style={{ fontFamily: 'CourierPrime_400Regular' }}>
           {error || 'No events found in your area'}
         </Text>
       </View>
@@ -88,7 +90,8 @@ const EventsList = memo(({
       keyboardShouldPersistTaps="handled"
       keyboardDismissMode="on-drag"
       stickySectionHeadersEnabled={true}
-      style={styles.list}
+      className="flex-1 bg-concrete-dark"
+      contentContainerStyle={styles.listContent}
     />
   );
 });
@@ -96,33 +99,8 @@ const EventsList = memo(({
 EventsList.displayName = 'EventsList';
 
 const styles = StyleSheet.create({
-  list: {
-    flex: 1,
-  },
   listContent: {
     paddingBottom: 16,
-  },
-  sectionHeader: {
-    backgroundColor: colors.background,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    paddingBottom: 16,
-    borderBottomWidth: 2,
-    borderBottomColor: colors.primary,
-    marginBottom: 8,
-  },
-  sectionHeaderText: {
-    ...typography.h4,
-    color: colors.text,
-  },
-  emptyContainer: {
-    padding: 32,
-    alignItems: 'center',
-  },
-  emptyText: {
-    ...typography.body,
-    color: colors.textSecondary,
-    textAlign: 'center',
   },
 });
 

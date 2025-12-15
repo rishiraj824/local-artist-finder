@@ -1,17 +1,22 @@
-import React from 'react';
-import { Text, ActivityIndicator, View } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { ActivityIndicator, View } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { Calendar, Music, User } from 'lucide-react-native';
 import { RootStackParamList } from '../types';
 import { colors } from '../theme/colors';
 import { useAuth } from '../context/AuthContext';
+import SplashScreen from '../screens/SplashScreen';
 import EventsScreen from '../screens/EventsScreen';
 import GenresScreen from '../screens/GenresScreen';
 import ArtistDetailsScreen from '../screens/ArtistDetailsScreen';
 import GenreDetailScreen from '../screens/GenreDetailScreen';
 import LoginScreen from '../screens/LoginScreen';
 import ProfileScreen from '../screens/ProfileScreen';
+import SettingsScreen from '../screens/SettingsScreen';
+import ScanScreen from '../screens/ScanScreen';
+import VibeCheckScreen from '../screens/VibeCheckScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator();
@@ -21,20 +26,16 @@ function MainTabs() {
     <Tab.Navigator
       screenOptions={{
         tabBarStyle: {
-          backgroundColor: colors.surface,
-          borderTopColor: colors.border,
-          borderTopWidth: 1,
+          backgroundColor: '#1a1a1a',
+          borderTopColor: '#3a3a3a',
+          borderTopWidth: 2,
           height: 60,
           paddingBottom: 8,
           paddingTop: 8,
         },
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.textSecondary,
-        tabBarLabelStyle: {
-          fontFamily: 'Lato_700Bold',
-          fontSize: 12,
-          fontWeight: '700',
-        },
+        tabBarActiveTintColor: '#39ff14',
+        tabBarInactiveTintColor: '#666',
+        tabBarShowLabel: false,
         headerStyle: {
           backgroundColor: colors.surface,
         },
@@ -47,24 +48,22 @@ function MainTabs() {
       }}
     >
       <Tab.Screen
-        name="Events"
-        component={EventsScreen}
+        name="Genres"
+        component={GenresScreen}
         options={{
-          title: 'Where are we going?',
-          tabBarLabel: 'Events',
-          tabBarIcon: ({ size }) => (
-            <Text style={{ fontSize: size }}>🎉</Text>
+          headerShown: false,
+          tabBarIcon: ({ color, size }) => (
+            <Music size={size} color={color} strokeWidth={2.5} />
           ),
         }}
       />
       <Tab.Screen
-        name="Genres"
-        component={GenresScreen}
+        name="Events"
+        component={EventsScreen}
         options={{
-          title: 'Explore Genres',
-          tabBarLabel: 'Explore',
-          tabBarIcon: ({ size }) => (
-            <Text style={{ fontSize: size }}>🎵</Text>
+          headerShown: false,
+          tabBarIcon: ({ color, size }) => (
+            <Calendar size={size} color={color} strokeWidth={2.5} />
           ),
         }}
       />
@@ -73,9 +72,8 @@ function MainTabs() {
         component={ProfileScreen}
         options={{
           title: 'Profile',
-          tabBarLabel: 'Profile',
-          tabBarIcon: ({ size }) => (
-            <Text style={{ fontSize: size }}>👤</Text>
+          tabBarIcon: ({ color, size }) => (
+            <User size={size} color={color} strokeWidth={2.5} />
           ),
         }}
       />
@@ -85,6 +83,7 @@ function MainTabs() {
 
 export default function AppNavigator() {
   const { isAuthenticated, loading } = useAuth();
+  const [showSplash, setShowSplash] = useState(true);
 
   // Show loading spinner while checking auth state
   if (loading) {
@@ -100,6 +99,11 @@ export default function AppNavigator() {
         <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
+  }
+
+  // Show splash screen on first load (only for non-authenticated users)
+  if (showSplash && !isAuthenticated) {
+    return <SplashScreen onFinish={() => setShowSplash(false)} />;
   }
 
   return (
@@ -145,6 +149,33 @@ export default function AppNavigator() {
               component={GenreDetailScreen}
               options={{
                 title: 'Genre',
+              }}
+            />
+            <Stack.Screen
+              name="Settings"
+              component={SettingsScreen}
+              options={{
+                title: 'Settings',
+                headerStyle: {
+                  backgroundColor: colors.surface,
+                },
+                headerTintColor: colors.text,
+              }}
+            />
+            <Stack.Screen
+              name="Scan"
+              component={ScanScreen}
+              options={{
+                headerShown: false,
+                presentation: 'fullScreenModal',
+              }}
+            />
+            <Stack.Screen
+              name="VibeCheck"
+              component={VibeCheckScreen}
+              options={{
+                headerShown: false,
+                presentation: 'modal',
               }}
             />
           </>
