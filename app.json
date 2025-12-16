@@ -63,7 +63,6 @@
       "expo-web-browser",
       "@react-native-google-signin/google-signin",
       "expo-audio",
-      "expo-barcode-scanner",
       "react-native-nfc-manager",
       "expo-asset"
     ],

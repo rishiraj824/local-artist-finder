@@ -445,24 +445,7 @@ export default function ProfileScreen() {
 
       {/* Vibe Check Buttons */}
       <View className="px-4 mb-6" style={{ gap: 12 }}>
-        <TouchableOpacity
-          className="bg-neon-green border-4 border-black py-4 flex-row justify-center items-center gap-2"
-          style={{
-            shadowColor: "#39ff14",
-            shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.6,
-            shadowRadius: 8,
-          }}
-          onPress={() => navigation.navigate('Scan')}
-        >
-          <Camera size={22} color="#000" strokeWidth={2.5} />
-          <Text
-            className="text-black text-base font-black tracking-wide"
-            style={{ fontFamily: "CourierPrime_700Bold" }}
-          >
-            SCAN MODE
-          </Text>
-        </TouchableOpacity>
+        {/* Scan Mode temporarily disabled - will be re-enabled after fixing barcode scanner */}
 
         <TouchableOpacity
           className="bg-black border-4 border-neon-pink py-4 flex-row justify-center items-center gap-2"
