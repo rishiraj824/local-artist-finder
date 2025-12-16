@@ -12,7 +12,6 @@
       "backgroundColor": "#0a0a0a"
     },
     "description": "drops - Discover the freshest EDM events and artists. Dive into the scene, explore genres, and catch the next drop.",
-    "privacy": "public",
     "platforms": [
       "ios",
       "android"
@@ -65,7 +64,8 @@
       "@react-native-google-signin/google-signin",
       "expo-audio",
       "expo-barcode-scanner",
-      "react-native-nfc-manager"
+      "react-native-nfc-manager",
+      "expo-asset"
     ],
     "scheme": "drops",
     "extra": {
