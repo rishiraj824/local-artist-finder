@@ -15,7 +15,7 @@ import GenreDetailScreen from '../screens/GenreDetailScreen';
 import LoginScreen from '../screens/LoginScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import SettingsScreen from '../screens/SettingsScreen';
-import ScanScreen from '../screens/ScanScreen';
+// import ScanScreen from '../screens/ScanScreen'; // Temporarily disabled - barcode scanner removed
 import VibeCheckScreen from '../screens/VibeCheckScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -162,14 +162,7 @@ export default function AppNavigator() {
                 headerTintColor: colors.text,
               }}
             />
-            <Stack.Screen
-              name="Scan"
-              component={ScanScreen}
-              options={{
-                headerShown: false,
-                presentation: 'fullScreenModal',
-              }}
-            />
+            {/* Scan screen temporarily disabled - barcode scanner removed */}
             <Stack.Screen
               name="VibeCheck"
               component={VibeCheckScreen}
