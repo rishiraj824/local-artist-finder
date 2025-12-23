@@ -88,6 +88,27 @@ export class LocationService {
       return null;
     }
   }
+
+  /**
+   * Get user location coordinates for distance calculations
+   */
+  async getUserLocation(): Promise<{ latitude: number; longitude: number } | null> {
+    try {
+      const location = await this.getCurrentLocation();
+
+      if (!location) {
+        return null;
+      }
+
+      return {
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+      };
+    } catch (error) {
+      console.error('Error getting user location:', error);
+      return null;
+    }
+  }
 }
 
 export const locationService = new LocationService();

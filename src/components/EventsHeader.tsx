@@ -41,10 +41,10 @@ const EventsHeader = memo(({
   return (
     <View className="px-5 pt-2 pb-6 bg-concrete-dark" style={{ zIndex: 3000 }}>
       {/* Title */}
-      <Text className="text-3xl font-black text-white tracking-wider uppercase mb-4" style={{ fontFamily: 'BlackOpsOne_400Regular' }}>
-        DROPS
+      <Text className="text-2xl font-black text-white tracking-wider uppercase mb-2" style={{ fontFamily: 'BlackOpsOne_400Regular' }}>
+        EVENTS.DROP
       </Text>
-      <View className="h-1 w-16 bg-neon-pink mb-4" style={{ shadowColor: '#ff006e', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.8, shadowRadius: 8 }} />
+      <View className="h-1 w-20 bg-neon-pink mb-4" style={{ shadowColor: '#ff006e', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.8, shadowRadius: 8 }} />
 
       <View style={styles.searchRow}>
         <View style={styles.dropdownWrapper}>

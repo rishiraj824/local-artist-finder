@@ -83,22 +83,39 @@ export class EDMTrainService {
   /**
    * Get events by location ID
    * @param locationId - EDM Train location ID (e.g., for city)
+   * @param startDate - Optional start date (YYYY-MM-DD format)
+   * @param endDate - Optional end date (YYYY-MM-DD format)
    */
-  async getEventsByLocation(locationId: string): Promise<EDMTrainEvent[]> {
+  async getEventsByLocation(
+    locationId: string,
+    startDate?: string,
+    endDate?: string
+  ): Promise<EDMTrainEvent[]> {
     try {
       console.log("=== EDM Train API: Fetching events ===");
       console.log("Location IDs:", locationId);
+      console.log("Date range:", startDate || "none", "to", endDate || "none");
       console.log(
         "API Key:",
         this.apiKey ? `${this.apiKey.substring(0, 8)}...` : "NOT SET"
       );
 
-      const url = buildUrl(`${EDM_TRAIN_BASE_URL}/events`, {
+      const params: Record<string, string> = {
         locationIds: locationId,
         client: this.apiKey,
         livestreamInd: "false",
         includeElectronicGenreInd: "true",
-      });
+      };
+
+      // Add date parameters if provided
+      if (startDate) {
+        params.startDate = startDate;
+      }
+      if (endDate) {
+        params.endDate = endDate;
+      }
+
+      const url = buildUrl(`${EDM_TRAIN_BASE_URL}/events`, params);
 
       console.log("Request URL:", url);
 
@@ -212,8 +229,14 @@ export class EDMTrainService {
   /**
    * Get events by city name
    * @param city - City name to search for
+   * @param startDate - Optional start date (YYYY-MM-DD format)
+   * @param endDate - Optional end date (YYYY-MM-DD format)
    */
-  async getEventsByCity(city: string): Promise<EDMTrainEvent[]> {
+  async getEventsByCity(
+    city: string,
+    startDate?: string,
+    endDate?: string
+  ): Promise<EDMTrainEvent[]> {
     try {
       console.log("=== Getting events for city:", city, "===");
 
@@ -226,7 +249,7 @@ export class EDMTrainService {
       }
 
       console.log("Found location ID(s):", locationId);
-      return await this.getEventsByLocation(locationId);
+      return await this.getEventsByLocation(locationId, startDate, endDate);
     } catch (error) {
       console.error("Error fetching events by city:", error);
       throw error;
@@ -372,6 +395,71 @@ export class EDMTrainService {
   }
 
   /**
+   * Classify event type based on timing and other factors
+   */
+  private classifyEventType(
+    startTime?: string,
+    endTime?: string,
+    festivalId?: string,
+    eventName?: string
+  ): 'festival' | 'rave' | 'afters' | 'show' {
+    // Check if it's a festival
+    if (festivalId ||
+        eventName?.toLowerCase().includes('festival') ||
+        eventName?.toLowerCase().includes('fest')) {
+      return 'festival';
+    }
+
+    // Parse start time to determine event type
+    if (startTime) {
+      try {
+        let hour: number;
+
+        // Handle different time formats
+        if (startTime.includes('T') || startTime.includes(' ')) {
+          // Full datetime string
+          const date = new Date(startTime);
+          hour = date.getHours();
+        } else if (startTime.includes(':')) {
+          // Time string like "20:00:00" or "20:00"
+          hour = parseInt(startTime.split(':')[0]);
+        } else {
+          // Default to rave
+          return 'rave';
+        }
+
+        // Afters: Starts between midnight and 6am (0-6)
+        if (hour >= 0 && hour < 6) {
+          return 'afters';
+        }
+
+        // Rave: Starts between 8pm and midnight (20-23)
+        if (hour >= 20) {
+          return 'rave';
+        }
+
+        // Show: Daytime or early evening events (6am-8pm)
+        return 'show';
+      } catch (error) {
+        console.error('[EDM Train] Error parsing start time:', startTime, error);
+      }
+    }
+
+    // Default to rave if can't determine
+    return 'rave';
+  }
+
+  /**
+   * Parse date string to ensure it's in correct local format
+   * EDM Train returns dates as "YYYY-MM-DD"
+   */
+  private parseEventDate(dateString: string): string {
+    // EDM Train API returns dates as "YYYY-MM-DD" which should be treated as local dates
+    // Return as-is, the client will parse it correctly as local time
+    return dateString;
+  }
+
+  /**
    * Transform EDM Train API response to our Event type
    */
   private transformEvents(data: any[]): EDMTrainEvent[] {
@@ -398,15 +486,26 @@ export class EDMTrainService {
         }
       }
 
+      const startTime = event.startTime || event.start_time;
+      const endTime = event.endTime || event.end_time;
+      const eventType = this.classifyEventType(
+        startTime,
+        endTime,
+        event.festivalId,
+        eventName
+      );
+
       return {
         id: event.id.toString(),
         name: eventName,
-        date: event.date,
-        startTime: event.startTime || event.start_time,
-        endTime: event.endTime || event.end_time,
+        date: this.parseEventDate(event.date),
+        startTime,
+        endTime,
         venue: {
           name: event.venue?.name || "TBA",
           location: event.venue?.location || event.venue?.address || "",
+          latitude: event.venue?.latitude,
+          longitude: event.venue?.longitude,
         },
         artistList:
           event.artistList?.map((artist: any) => ({
@@ -417,6 +516,7 @@ export class EDMTrainService {
         ages: event.ages,
         festivalId: event.festivalId,
         genres: event.genres || [],
+        eventType,
       };
     });
   }

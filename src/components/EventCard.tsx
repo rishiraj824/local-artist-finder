@@ -335,6 +335,27 @@ export default function EventCard({ event }: EventCardProps) {
             {event.name.toUpperCase()}
           </Text>
 
+          {/* Event Type Badge */}
+          {event.eventType && (
+            <View className="mb-3">
+              <View
+                className={`px-3 py-1.5 border-2 self-start ${
+                  event.eventType === 'festival' ? 'bg-neon-pink border-neon-pink' :
+                  event.eventType === 'afters' ? 'bg-electric-blue border-electric-blue' :
+                  event.eventType === 'rave' ? 'bg-neon-green border-neon-green' :
+                  'bg-gray-500 border-gray-500'
+                }`}
+              >
+                <Text className="text-black text-xs font-black uppercase tracking-widest" style={{ fontFamily: 'CourierPrime_700Bold' }}>
+                  {event.eventType === 'afters' ? '🌙 AFTERS' :
+                   event.eventType === 'festival' ? '🎪 FESTIVAL' :
+                   event.eventType === 'rave' ? '⚡ RAVE' :
+                   '🎵 SHOW'}
+                </Text>
+              </View>
+            </View>
+          )}
+
           {/* Timing & Location Badges */}
           <View className="flex-row flex-wrap gap-3 mb-4">
             {event.startTime && (

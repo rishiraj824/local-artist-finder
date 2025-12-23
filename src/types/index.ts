@@ -1,3 +1,6 @@
+// Event Types
+export type EventType = 'festival' | 'rave' | 'afters' | 'show';
+
 // EDM Train API Types
 export interface EDMTrainEvent {
   id: string;
@@ -8,12 +11,15 @@ export interface EDMTrainEvent {
   venue: {
     name: string;
     location: string;
+    latitude?: number;
+    longitude?: number;
   };
   artistList: EDMTrainArtist[];
   ticketLink?: string;
   ages?: string;
   festivalId?: string;
   genres?: string[];
+  eventType?: EventType;
 }
 
 export interface EDMTrainArtist {

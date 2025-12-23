@@ -4,97 +4,52 @@
 export const COMPREHENSIVE_GENRES = [
   // House & Sub-genres
   'house',
-  'deep house',
   'deep-house',
-  'tech house',
   'tech-house',
-  'progressive house',
   'progressive-house',
-  'electro house',
   'electro-house',
-  'future house',
   'future-house',
-  'tropical house',
   'tropical-house',
-  'bass house',
   'bass-house',
-  'chicago house',
   'chicago-house',
-  'acid house',
   'acid-house',
-  'big room',
   'big-room',
-  'melbourne bounce',
   'melbourne-bounce',
-  'afro house',
   'afro-house',
-  'afrohouse',
-  'latin house',
   'latin-house',
-  'latinhouse',
-  'soulful house',
   'soulful-house',
-  'jackin house',
   'jackin-house',
-  'garage house',
   'garage-house',
-  'filter house',
   'filter-house',
-  'disco house',
   'disco-house',
-  'minimal house',
   'minimal-house',
   'microhouse',
-  'micro house',
-  'tribal house',
   'tribal-house',
-  'funky house',
   'funky-house',
-  'hard house',
   'hard-house',
-  'uk hard house',
   'uk-hard-house',
-  'progressive electro house',
   'progressive-electro-house',
-  'organic house',
   'organic-house',
-  'melodic house',
   'melodic-house',
-  'indie dance',
   'indie-dance',
-  'brazilian house',
   'brazilian-house',
-  'cuban house',
-  'brazilian bass',
+  'cuban-house',
+  'french-house',
 
   // Techno & Sub-genres
   'techno',
-  'minimal techno',
   'minimal-techno',
-  'detroit techno',
   'detroit-techno',
-  'acid techno',
   'acid-techno',
-  'hard techno',
   'hard-techno',
-  'industrial techno',
   'industrial-techno',
-  'dub techno',
   'dub-techno',
-  'melodic techno',
   'melodic-techno',
-  'peak time techno',
   'peak-time-techno',
-  'peak time',
-  'raw techno',
   'raw-techno',
-  'hypnotic techno',
   'hypnotic-techno',
-  'tech trance',
-  'tech-trance',
-  'schranz',
-  'electro techno',
   'electro-techno',
+  'schranz',
 
   // Trance & Sub-genres
   'trance',
@@ -118,38 +73,23 @@ export const COMPREHENSIVE_GENRES = [
   'balearic-trance',
 
   // Drum & Bass / Jungle
-  'drum and bass',
   'drum-and-bass',
   'dnb',
-  'd&b',
   'jungle',
-  'liquid funk',
   'liquid-funk',
-  'liquid dnb',
   'liquid-dnb',
   'neurofunk',
-  'neuro',
-  'jump up',
   'jump-up',
   'darkstep',
-  'dark step',
   'techstep',
-  'tech step',
   'drumfunk',
-  'drum funk',
   'drumstep',
-  'drum step',
   'sambass',
-  'ragga jungle',
   'ragga-jungle',
-  'atmospheric dnb',
   'atmospheric-dnb',
-  'minimal dnb',
   'minimal-dnb',
-  'deep dnb',
   'deep-dnb',
   'halftime',
-  'half time',
 
   // Dubstep & Bass Music
   'dubstep',
@@ -159,7 +99,6 @@ export const COMPREHENSIVE_GENRES = [
   'deep-dubstep',
   'melodic-dubstep',
   'chillstep',
-  'drumstep',
   'tearout',
   'deathstep',
   'wonky',
@@ -175,14 +114,12 @@ export const COMPREHENSIVE_GENRES = [
   // UK Bass Genres
   'uk-garage',
   'garage',
-  '2-step',
   '2-step-garage',
   'speed-garage',
   'bassline',
   'bassline-house',
   'uk-funky',
   'grime',
-  'dubstep',
   'future-garage',
   'uk-bass',
 
@@ -250,7 +187,6 @@ export const COMPREHENSIVE_GENRES = [
   'glitch',
   'glitch-hop',
   'experimental',
-  'microhouse',
   'clicks-and-cuts',
   'drill-and-bass',
   'breakcore',
@@ -269,7 +205,6 @@ export const COMPREHENSIVE_GENRES = [
   'cyberpunk',
   'dark-synth',
   'dreamwave',
-  'chillwave',
   'future-funk',
 
   // Industrial & EBM
@@ -290,8 +225,6 @@ export const COMPREHENSIVE_GENRES = [
   'italo-disco',
   'space-disco',
   'cosmic-disco',
-  'disco-house',
-  'french-house',
   'filter-disco',
 
   // Dance & Pop
@@ -307,24 +240,13 @@ export const COMPREHENSIVE_GENRES = [
 
   // Regional/Cultural
   'afrobeat',
-  'afro beat',
-  'afro house',
-  'afro-house',
-  'afrohouse',
-  'afro tech',
   'afro-tech',
-  'afrotech',
   'amapiano',
   'gqom',
   'kwaito',
-  'latin house',
-  'latin-house',
-  'latinhouse',
   'latin',
   'latino',
-  'baile funk',
   'baile-funk',
-  'brazilian bass',
   'brazilian-bass',
   'brazilian',
   'moombahton',
@@ -332,21 +254,16 @@ export const COMPREHENSIVE_GENRES = [
   'dembow',
   'reggaeton',
   'dancehall',
-  'dancehall digital',
   'dancehall-digital',
-  'uk funky',
-  'uk-funky',
   'footwork',
   'juke',
   'vogue',
   'ballroom',
-  'jersey club',
   'jersey-club',
-  'philly club',
   'philly-club',
   'detroit',
   'chicago',
-  'new york house',
+  'new-york-house',
 
   // Phonk & Wave
   'phonk',
@@ -359,11 +276,8 @@ export const COMPREHENSIVE_GENRES = [
   // Misc/Hybrid
   'bass',
   'bass-music',
-  'electronica',
   'leftfield-bass',
   'experimental-bass',
-  'uk-bass',
-  'halftime',
   'midtempo',
   'complextro',
   'neurostep',
@@ -394,6 +308,25 @@ export const GENRE_COLORS = [
   '#F39C12', '#D35400', '#C0392B', '#BDC3C7', '#7F8C8D',
 ];
 
+// Simple hash function for consistent color assignment
+const hashString = (str: string): number => {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32-bit integer
+  }
+  return Math.abs(hash);
+};
+
+// Returns a consistent color for each genre name
+export const getGenreColor = (genreName: string) => {
+  const hash = hashString(genreName.toLowerCase());
+  return GENRE_COLORS[hash % GENRE_COLORS.length];
+};
+
+// Deprecated: kept for backwards compatibility
 export const getRandomColor = () => {
-  return GENRE_COLORS[Math.floor(Math.random() * GENRE_COLORS.length)];
+  console.warn('getRandomColor is deprecated, use getGenreColor instead');
+  return GENRE_COLORS[0];
 };

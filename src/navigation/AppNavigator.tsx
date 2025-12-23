@@ -8,6 +8,7 @@ import { RootStackParamList } from '../types';
 import { colors } from '../theme/colors';
 import { useAuth } from '../context/AuthContext';
 import SplashScreen from '../screens/SplashScreen';
+import OnboardingScreen, { hasCompletedOnboarding } from '../screens/OnboardingScreen';
 import EventsScreen from '../screens/EventsScreen';
 import GenresScreen from '../screens/GenresScreen';
 import ArtistDetailsScreen from '../screens/ArtistDetailsScreen';
@@ -84,9 +85,28 @@ function MainTabs() {
 export default function AppNavigator() {
   const { isAuthenticated, loading } = useAuth();
   const [showSplash, setShowSplash] = useState(true);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [checkingOnboarding, setCheckingOnboarding] = useState(true);
 
-  // Show loading spinner while checking auth state
-  if (loading) {
+  // Check if user has completed onboarding
+  useEffect(() => {
+    const checkOnboarding = async () => {
+      if (isAuthenticated) {
+        const completed = await hasCompletedOnboarding();
+        console.log('[AppNavigator] Onboarding check - completed:', completed);
+        setShowOnboarding(!completed);
+      } else {
+        // Reset onboarding state when user logs out
+        setShowOnboarding(false);
+      }
+      setCheckingOnboarding(false);
+    };
+
+    checkOnboarding();
+  }, [isAuthenticated]);
+
+  // Show loading spinner while checking auth state or onboarding state
+  if (loading || checkingOnboarding) {
     return (
       <View
         style={{
@@ -104,6 +124,11 @@ export default function AppNavigator() {
   // Show splash screen on first load (only for non-authenticated users)
   if (showSplash && !isAuthenticated) {
     return <SplashScreen onFinish={() => setShowSplash(false)} />;
+  }
+
+  // Show onboarding for authenticated users who haven't completed it
+  if (isAuthenticated && showOnboarding) {
+    return <OnboardingScreen onComplete={() => setShowOnboarding(false)} />;
   }
 
   return (
@@ -135,27 +160,30 @@ export default function AppNavigator() {
             <Stack.Screen
               name="MainTabs"
               component={MainTabs}
-              options={{ headerShown: false }}
+              options={{ headerShown: false, headerTitle: '' }}
             />
             <Stack.Screen
               name="ArtistDetails"
               component={ArtistDetailsScreen}
               options={{
-                title: 'Artist Details',
+                title: '',
+                headerBackTitleVisible: false,
               }}
             />
             <Stack.Screen
               name="GenreDetail"
               component={GenreDetailScreen}
               options={{
-                title: 'Genre',
+                title: '',
+                headerBackTitleVisible: false,
               }}
             />
             <Stack.Screen
               name="Settings"
               component={SettingsScreen}
               options={{
-                title: 'Settings',
+                title: '',
+                headerBackTitleVisible: false,
                 headerStyle: {
                   backgroundColor: colors.surface,
                 },

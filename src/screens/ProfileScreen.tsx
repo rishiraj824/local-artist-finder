@@ -128,8 +128,8 @@ export default function ProfileScreen() {
     return (
       <SafeAreaView className="flex-1 bg-concrete-dark justify-center items-center">
         <Text
-          className="text-base font-bold text-neon-pink"
-          style={{ fontFamily: "Lato_700Bold" }}
+          className="text-base text-neon-pink"
+          style={{ fontFamily: "CourierPrime_700Bold", fontWeight: '700' }}
         >
           No user data available
         </Text>
@@ -309,7 +309,7 @@ export default function ProfileScreen() {
                   className="text-[10px] font-bold text-white"
                   style={{ fontFamily: "CourierPrime_700Bold" }}
                 >
-                  RAVE HOURS
+                  TOTAL HOURS
                 </Text>
               </View>
               <Text
@@ -372,25 +372,37 @@ export default function ProfileScreen() {
           )}
 
           {/* Action Buttons */}
-          <View className="flex-row justify-between items-center pt-2 border-t border-gray-400">
+          <View className="pt-3 border-t-2 border-black" style={{ gap: 8 }}>
             <TouchableOpacity
-              className="flex-row items-center gap-2"
+              className="bg-black py-3 px-4 border-2 border-gray-800"
               onPress={() => navigation.navigate('Settings')}
+              style={{
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.3,
+                shadowRadius: 4,
+              }}
             >
               <Text
-                className="text-xs font-bold"
-                style={{ fontFamily: "CourierPrime_700Bold" }}
+                className="text-base text-white text-center"
+                style={{ fontFamily: "CourierPrime_700Bold", fontWeight: '700' }}
               >
                 ⚙️ SETTINGS
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
-              className="flex-row items-center gap-2"
+              className="bg-red-600 py-3 px-4 border-2 border-red-800"
               onPress={handleSignOut}
+              style={{
+                shadowColor: "#dc2626",
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.4,
+                shadowRadius: 4,
+              }}
             >
               <Text
-                className="text-xs font-bold text-red-600"
-                style={{ fontFamily: "CourierPrime_700Bold" }}
+                className="text-base text-white text-center"
+                style={{ fontFamily: "CourierPrime_700Bold", fontWeight: '700' }}
               >
                 LOGOUT 🚪
               </Text>

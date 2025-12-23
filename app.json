@@ -23,6 +23,7 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.discovery.localartist",
       "buildNumber": "1",
+      "deploymentTarget": "16.0",
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "drops uses your location to find the freshest events near you.",
         "NSCameraUsageDescription": "drops needs camera access to scan QR codes and connect with other ravers.",

@@ -7,12 +7,11 @@ import {
   Alert,
   StyleSheet,
   ScrollView,
-  Image,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import MaskedView from "@react-native-masked-view/masked-view";
-import { Music, Calendar, Star } from "lucide-react-native";
+import { Music, Calendar, Star, Circle } from "lucide-react-native";
 import { useAuth } from "../context/AuthContext";
 
 export default function LoginScreen() {
@@ -141,13 +140,6 @@ export default function LoginScreen() {
               }}
             />
           </View>
-
-          <Text
-            className="text-sm text-gray-400 text-center mt-1 tracking-wide px-8"
-            style={{ fontFamily: "CourierPrime_400Regular" }}
-          >
-            catch the freshest beats • explore • vibe
-          </Text>
         </View>
 
         {/* Benefits */}
@@ -200,11 +192,23 @@ export default function LoginScreen() {
               <ActivityIndicator color="#000" />
             ) : (
               <>
-                <Image
-                  source={{ uri: 'https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg' }}
-                  style={{ width: 20, height: 20 }}
-                  resizeMode="contain"
-                />
+                <View className="flex-row items-center justify-center">
+                  <View style={{ position: 'relative', width: 24, height: 24 }}>
+                    {/* Google "G" representation */}
+                    <View style={{
+                      width: 24,
+                      height: 24,
+                      borderRadius: 12,
+                      borderWidth: 2.5,
+                      borderColor: '#4285f4',
+                      backgroundColor: '#fff',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                    }}>
+                      <Text style={{ fontSize: 14, fontWeight: 'bold', color: '#4285f4' }}>G</Text>
+                    </View>
+                  </View>
+                </View>
                 <Text
                   className="text-black text-base font-black uppercase tracking-wide"
                   style={{ fontFamily: "CourierPrime_700Bold" }}
@@ -230,11 +234,18 @@ export default function LoginScreen() {
               <ActivityIndicator color="#000" />
             ) : (
               <>
-                <Image
-                  source={{ uri: 'https://upload.wikimedia.org/wikipedia/commons/8/84/Spotify_icon.svg' }}
-                  style={{ width: 24, height: 24 }}
-                  resizeMode="contain"
-                />
+                <View className="flex-row items-center justify-center">
+                  <View style={{
+                    width: 24,
+                    height: 24,
+                    borderRadius: 12,
+                    backgroundColor: '#1DB954',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                  }}>
+                    <Music size={14} color="#000" strokeWidth={3} />
+                  </View>
+                </View>
                 <Text
                   className="text-black text-base font-black uppercase tracking-wide"
                   style={{ fontFamily: "CourierPrime_700Bold" }}
