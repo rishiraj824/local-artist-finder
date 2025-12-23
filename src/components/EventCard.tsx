@@ -155,6 +155,9 @@ export default function EventCard({ event }: EventCardProps) {
   };
 
   const shuffleAndPlayTracks = async () => {
+    console.log('[EventCard] Vibes button clicked for event:', event.name);
+    console.log('[EventCard] Artist list:', event.artistList.map(a => a.name).join(', '));
+
     // If tracks aren't loaded yet, load them first
     if (artistsWithDetails.length === 0) {
       setShowTracks(true);
@@ -162,30 +165,46 @@ export default function EventCard({ event }: EventCardProps) {
 
       try {
         const artistNames = event.artistList.map((artist) => artist.name);
+        console.log('[EventCard] Loading tracks for artists:', artistNames);
+
         const fetchedArtists = await musicService.getArtistsWithDetails(artistNames);
+        console.log('[EventCard] Fetched artists with tracks:', fetchedArtists.length);
+
         setArtistsWithDetails(fetchedArtists);
 
         // After loading, shuffle and play
         const allTracks = fetchedArtists.flatMap((artist) => artist.tracks);
+        console.log('[EventCard] Total tracks available:', allTracks.length);
+
         if (allTracks.length > 0) {
           const shuffledTracks = [...allTracks].sort(() => Math.random() - 0.5);
           const randomTrack = shuffledTracks[0];
+          console.log('[EventCard] Playing random track:', randomTrack.title);
+
           if (randomTrack.previewUrl) {
             await handlePlayTrack(randomTrack);
+          } else {
+            console.warn('[EventCard] No preview URL available for track:', randomTrack.title);
           }
+        } else {
+          console.warn('[EventCard] No tracks available to play');
         }
       } catch (error) {
-        console.error('Error loading artist details:', error);
+        console.error('[EventCard] Error loading artist details:', error);
       } finally {
         setIsLoadingTracks(false);
       }
     } else {
       // Tracks already loaded, just shuffle and play
+      console.log('[EventCard] Tracks already loaded, shuffling...');
       setShowTracks(true);
       const allTracks = artistsWithDetails.flatMap((artist) => artist.tracks);
+
       if (allTracks.length > 0) {
         const shuffledTracks = [...allTracks].sort(() => Math.random() - 0.5);
         const randomTrack = shuffledTracks[0];
+        console.log('[EventCard] Playing shuffled track:', randomTrack.title);
+
         if (randomTrack.previewUrl) {
           await handlePlayTrack(randomTrack);
         }
@@ -267,11 +286,21 @@ export default function EventCard({ event }: EventCardProps) {
     };
   }, [sound]);
 
+  const handleCardPress = () => {
+    if (!showTracks) {
+      // Load tracks when expanding the card
+      loadTracks();
+    } else {
+      // Just toggle off when collapsing
+      setShowTracks(false);
+    }
+  };
+
   return (
     <TouchableOpacity
       className="mx-4 my-3"
       style={{ transform: [{ rotate: `${showTracks ? 0 : rotation}deg` }] }}
-      onPress={() => setShowTracks(!showTracks)}
+      onPress={handleCardPress}
       activeOpacity={0.9}
     >
       {/* Ripped Poster Fragment */}
