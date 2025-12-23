@@ -11,12 +11,14 @@ import {
   Dimensions,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { Search, List, Grid, ChevronRight } from 'lucide-react-native';
+import { Search, ChevronRight, User } from 'lucide-react-native';
 import { useSpotifyApi } from '../hooks/useSpotifyApi';
 import GenreGrid from '../components/GenreGrid';
 import { colors } from '../theme/colors';
 import { typography } from '../theme/typography';
-import { COMPREHENSIVE_GENRES, getRandomColor } from '../data/comprehensiveGenres';
+import { COMPREHENSIVE_GENRES, getGenreColor } from '../data/comprehensiveGenres';
+import { spotifyService } from '../services/spotifyApi';
+import { SpotifyArtist } from '../types';
 
 interface Genre {
   name: string;
@@ -32,12 +34,43 @@ const GENRE_CATEGORIES = [
   { name: 'Ambient', genres: ['ambient', 'dark-ambient', 'ambient-dub', 'downtempo', 'chillout'], color: '#bb86fc', tag: 'AMBIENT' },
 ];
 
+// Intelligent semantic search - normalizes genre names for better matching
+const normalizeGenreForSearch = (text: string): string => {
+  return text
+    .toLowerCase()
+    .trim()
+    .replace(/[\s&]+/g, '-') // Convert spaces and & to hyphens
+    .replace(/[^\w-]/g, '') // Remove special chars except hyphens
+    .replace(/-+/g, '-'); // Collapse multiple hyphens
+};
+
+// Check if a genre matches the search query using intelligent matching
+const genreMatchesSearch = (genreName: string, searchQuery: string): boolean => {
+  const normalizedGenre = normalizeGenreForSearch(genreName);
+  const normalizedQuery = normalizeGenreForSearch(searchQuery);
+
+  // Direct match
+  if (normalizedGenre.includes(normalizedQuery)) {
+    return true;
+  }
+
+  // Check if genre contains all words from query (in any order)
+  const queryWords = normalizedQuery.split('-').filter(w => w.length > 0);
+  const genreWords = normalizedGenre.split('-').filter(w => w.length > 0);
+
+  // All query words must appear in genre
+  const allWordsMatch = queryWords.every(queryWord =>
+    genreWords.some(genreWord => genreWord.includes(queryWord) || queryWord.includes(genreWord))
+  );
+
+  return allWordsMatch;
+};
+
 export default function GenresScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [genres, setGenres] = useState<Genre[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<'list' | 'grid'>('grid');
   const navigation = useNavigation<any>();
 
   useEffect(() => {
@@ -48,7 +81,7 @@ export default function GenresScreen() {
       // Use comprehensive genre list instead of Spotify API
       const formattedGenres = COMPREHENSIVE_GENRES.map((name) => ({
         name,
-        color: getRandomColor(),
+        color: getGenreColor(name),
       }));
 
       console.log('[GenresScreen] Loaded', formattedGenres.length, 'genres');
@@ -62,17 +95,10 @@ export default function GenresScreen() {
     }
   }, []);
 
+  // Use intelligent semantic search instead of simple string matching
   const filteredGenres = genres.filter((genre) =>
-    genre.name.toLowerCase().includes(searchQuery.toLowerCase())
+    searchQuery.trim() === '' || genreMatchesSearch(genre.name, searchQuery)
   );
-
-  // Group genres by category
-  const groupedGenres = GENRE_CATEGORIES.map(category => ({
-    ...category,
-    items: filteredGenres.filter(g =>
-      category.genres.some(cg => g.name.toLowerCase().includes(cg.toLowerCase()))
-    )
-  })).filter(cat => cat.items.length > 0);
 
   if (loading) {
     return (
@@ -105,81 +131,33 @@ export default function GenresScreen() {
         <View className="h-1 w-20 bg-neon-green mt-2" style={{ shadowColor: '#39ff14', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.8, shadowRadius: 8 }} />
       </View>
 
-      {/* Search with view mode toggle */}
-      <View className="flex-row px-5 py-4 gap-2">
+      {/* Search */}
+      <View className="px-5 py-4">
         <TextInput
-          className="flex-1 h-12 bg-concrete-mid px-5 text-white text-base border-2 border-concrete-light"
+          className="h-12 bg-concrete-mid px-5 text-white text-base border-2 border-concrete-light"
           style={{ fontFamily: 'Lato_700Bold', letterSpacing: 1 }}
           placeholder="SEARCH GENRES..."
           placeholderTextColor="#666"
           value={searchQuery}
           onChangeText={setSearchQuery}
         />
-        <TouchableOpacity
-          className={`w-12 h-12 justify-center items-center border-2 ${viewMode === 'list' ? 'bg-neon-green border-neon-green' : 'bg-concrete-mid border-concrete-light'}`}
-          onPress={() => setViewMode('list')}
-        >
-          <List size={20} color={viewMode === 'list' ? '#000' : '#888'} strokeWidth={2.5} />
-        </TouchableOpacity>
-        <TouchableOpacity
-          className={`w-12 h-12 justify-center items-center border-2 ${viewMode === 'grid' ? 'bg-neon-green border-neon-green' : 'bg-concrete-mid border-concrete-light'}`}
-          onPress={() => setViewMode('grid')}
-        >
-          <Grid size={20} color={viewMode === 'grid' ? '#000' : '#888'} strokeWidth={2.5} />
-        </TouchableOpacity>
       </View>
 
-      {viewMode === 'list' ? (
-        <ScrollView className="flex-1" contentContainerStyle={{ padding: 20, gap: 20 }}>
-          {groupedGenres.map((category, idx) => (
-            <View key={idx} className="bg-gray-100 p-5 shadow-lg" style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 5 }}>
-              {/* Category Header */}
-              <View className="flex-row items-center gap-4 mb-4">
-                <View className="px-3 py-1.5" style={{ backgroundColor: category.color }}>
-                  <Text className="text-xs font-black text-black tracking-wide" style={{ fontFamily: 'BlackOpsOne_400Regular' }}>
-                    {category.tag}
-                  </Text>
-                </View>
-                <Text className="flex-1 text-2xl font-black text-black tracking-wide" style={{ fontFamily: 'PermanentMarker_400Regular' }}>
-                  {category.name.toUpperCase()}
-                </Text>
-              </View>
-
-              {/* Dotted line separator */}
-              <View className="h-0.5 mb-4 border-t-2 border-black border-dotted" />
-
-              {/* Genre items */}
-              <View className="gap-2.5">
-                {category.items.slice(0, 5).map((genre, genreIdx) => (
-                  <TouchableOpacity
-                    key={genreIdx}
-                    className="flex-row justify-between items-center py-3 px-4 bg-white border-l-4 border-black"
-                    onPress={() => navigation.navigate('GenreDetail', { genreName: genre.name })}
-                  >
-                    <Text className="text-base font-bold text-black uppercase tracking-tight" style={{ fontFamily: 'CourierPrime_700Bold' }}>
-                      {genre.name}
-                    </Text>
-                    <ChevronRight size={20} color="#000" strokeWidth={3} />
-                  </TouchableOpacity>
-                ))}
-              </View>
-
-              {/* View all button */}
-              {category.items.length > 5 && (
-                <TouchableOpacity className="mt-2.5 py-2.5 bg-black items-center">
-                  <Text className="text-sm font-bold text-white tracking-wide" style={{ fontFamily: 'CourierPrime_700Bold' }}>
-                    +{category.items.length - 5} MORE
-                  </Text>
-                </TouchableOpacity>
-              )}
-            </View>
-          ))}
-        </ScrollView>
-      ) : (
-        <View className="flex-1">
+      <View className="flex-1">
+        {/* Show empty state if searching and no results */}
+        {searchQuery.trim() && filteredGenres.length === 0 ? (
+          <View className="flex-1 justify-center items-center px-8">
+            <Text className="text-3xl font-black text-gray-600 mb-3" style={{ fontFamily: 'BlackOpsOne_400Regular' }}>
+              NO RESULTS
+            </Text>
+            <Text className="text-base text-gray-500 text-center mb-2" style={{ fontFamily: 'CourierPrime_400Regular' }}>
+              No genres found for "{searchQuery}"
+            </Text>
+          </View>
+        ) : (
           <GenreGrid genres={filteredGenres} />
-        </View>
-      )}
+        )}
+      </View>
     </SafeAreaView>
   );
 }
