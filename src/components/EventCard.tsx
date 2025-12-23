@@ -13,6 +13,7 @@ import { EventWithTracks, ArtistWithTracks } from '../types';
 import { musicService } from '../services/musicService';
 import TrackItem from './TrackItem';
 import { Audio } from 'expo-audio';
+import { locationService } from '../services/locationService';
 
 interface EventCardProps {
   event: EventWithTracks;
@@ -31,6 +32,26 @@ const getEventRotation = (eventId: string) => {
   return rotations[hash % rotations.length];
 };
 
+// Calculate distance between two coordinates using Haversine formula
+const calculateDistance = (
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number
+): number => {
+  const R = 3959; // Earth's radius in miles
+  const dLat = (lat2 - lat1) * (Math.PI / 180);
+  const dLon = (lon2 - lon1) * (Math.PI / 180);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * (Math.PI / 180)) *
+      Math.cos(lat2 * (Math.PI / 180)) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+};
+
 export default function EventCard({ event }: EventCardProps) {
   const navigation = useNavigation<any>();
   const [artistsWithDetails, setArtistsWithDetails] = useState<ArtistWithTracks[]>([]);
@@ -38,12 +59,48 @@ export default function EventCard({ event }: EventCardProps) {
   const [showTracks, setShowTracks] = useState(false);
   const [sound, setSound] = useState<Audio.Sound | null>(null);
   const [playingTrackId, setPlayingTrackId] = useState<string | null>(null);
+  const [showAllArtists, setShowAllArtists] = useState(false);
+  const [distance, setDistance] = useState<string | null>(null);
 
   const posterColor = getEventColor(event.id);
   const rotation = getEventRotation(event.id);
 
+  // Calculate distance from user location on mount
+  useEffect(() => {
+    const loadDistance = async () => {
+      if (!event.venue.latitude || !event.venue.longitude) {
+        return;
+      }
+
+      try {
+        const userLocation = await locationService.getUserLocation();
+        if (userLocation) {
+          const dist = calculateDistance(
+            userLocation.latitude,
+            userLocation.longitude,
+            event.venue.latitude,
+            event.venue.longitude
+          );
+
+          // Format distance
+          if (dist < 1) {
+            setDistance(`${dist.toFixed(1)}m`);
+          } else {
+            setDistance(`${dist.toFixed(1)}m`);
+          }
+        }
+      } catch (error) {
+        console.error('Error calculating distance:', error);
+      }
+    };
+
+    loadDistance();
+  }, [event.venue.latitude, event.venue.longitude]);
+
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
+    // Parse date as local time to avoid timezone offset issues
+    const [year, month, day] = dateString.split('-').map(Number);
+    const date = new Date(year, month - 1, day); // month is 0-indexed
     return date.toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
@@ -282,6 +339,13 @@ export default function EventCard({ event }: EventCardProps) {
               <Text className="text-white text-sm font-black uppercase tracking-tight" style={{ fontFamily: 'CourierPrime_700Bold' }}>
                 {event.venue.name.substring(0, 20)}
               </Text>
+              {distance && (
+                <View className="bg-neon-green px-2 py-1 border border-black ml-1">
+                  <Text className="text-black text-xs font-black tracking-wide" style={{ fontFamily: 'CourierPrime_700Bold' }}>
+                    {distance}
+                  </Text>
+                </View>
+              )}
             </TouchableOpacity>
           </View>
 
@@ -314,19 +378,32 @@ export default function EventCard({ event }: EventCardProps) {
                 LINEUP
               </Text>
               <View className="flex-row flex-wrap gap-2">
-                {event.artistList.slice(0, 3).map((artist) => (
-                  <View key={artist.id} className="bg-white px-3 py-1.5 border-2 border-black">
+                {(showAllArtists ? event.artistList : event.artistList.slice(0, 3)).map((artist) => (
+                  <TouchableOpacity
+                    key={artist.id}
+                    className="bg-white px-3 py-1.5 border-2 border-black"
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      navigation.navigate('ArtistDetails', { artistName: artist.name });
+                    }}
+                  >
                     <Text className="text-black text-sm font-black uppercase" style={{ fontFamily: 'CourierPrime_700Bold' }}>
                       {artist.name}
                     </Text>
-                  </View>
+                  </TouchableOpacity>
                 ))}
                 {event.artistList.length > 3 && (
-                  <View className="bg-black px-3 py-1.5 border-2 border-white">
+                  <TouchableOpacity
+                    className="bg-black px-3 py-1.5 border-2 border-white"
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      setShowAllArtists(!showAllArtists);
+                    }}
+                  >
                     <Text className="text-white text-sm font-black" style={{ fontFamily: 'CourierPrime_700Bold' }}>
-                      +{event.artistList.length - 3} MORE
+                      {showAllArtists ? 'SHOW LESS' : `+${event.artistList.length - 3} MORE`}
                     </Text>
-                  </View>
+                  </TouchableOpacity>
                 )}
               </View>
             </View>
