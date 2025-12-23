@@ -11,6 +11,7 @@ import Animated, {
   withTiming,
   Easing,
   cancelAnimation,
+  withSpring,
 } from "react-native-reanimated";
 import Svg, { Path, G, Text as SvgText } from "react-native-svg";
 import { useNavigation } from '@react-navigation/native';
@@ -551,9 +552,9 @@ const SunburstSegmentComponent: React.FC<{
       <Path
         d={path}
         fill={segment.color}
-        opacity={isLongPressed ? 1 : isHovered ? 0.95 : isDiscovered ? 1 : 0.3}
-        stroke={isDiscovered ? "#ffffff" : "none"}
-        strokeWidth={isDiscovered ? 1.5 : 0}
+        opacity={isLongPressed ? 1 : isHovered ? 0.95 : isDiscovered ? 0.95 : 0.5}
+        stroke={isDiscovered ? "#39ff14" : isHovered ? "#ffffff" : "rgba(255,255,255,0.2)"}
+        strokeWidth={isDiscovered ? 2 : isHovered ? 1.5 : 0.5}
       />
       <SvgText
         x={textX}
@@ -606,45 +607,55 @@ const GenreCard: React.FC<{
 
   const scale = isHovered ? 1.05 : 1;
 
+  const navigation = useNavigation<any>();
+
+  const handlePress = () => {
+    try {
+      console.log('[GenreCard] Navigating to GenreDetail with genre:', genre.name);
+      navigation.navigate('GenreDetail', { genreName: genre.name });
+    } catch (error) {
+      console.error('[GenreCard] Navigation error:', error);
+    }
+  };
+
   return (
-    <Link href={`/genre/${genre.name}`} asChild>
-      <Pressable
-        onPressIn={onHover}
-        onPressOut={onUnhover}
-        style={{
-          position: "absolute",
-          left: centerX + position.x - cardWidth / 2,
-          top: centerY + position.y - cardHeight / 2,
-          width: cardWidth,
-          height: cardHeight,
-          transform: [
-            { rotate: `${rotationDeg}deg` },
-            { scale }
-          ],
-        }}
+    <Pressable
+      onPressIn={onHover}
+      onPressOut={onUnhover}
+      onPress={handlePress}
+      style={{
+        position: "absolute",
+        left: centerX + position.x - cardWidth / 2,
+        top: centerY + position.y - cardHeight / 2,
+        width: cardWidth,
+        height: cardHeight,
+        transform: [
+          { rotate: `${rotationDeg}deg` },
+          { scale }
+        ],
+      }}
+    >
+      <View
+        style={[
+          styles.genreCard,
+          {
+            backgroundColor: genre.color,
+            shadowOpacity: isHovered ? 0.4 : 0.2,
+            shadowRadius: isHovered ? 12 : 8,
+          },
+        ]}
       >
-        <View
+        <Text
           style={[
-            styles.genreCard,
-            {
-              backgroundColor: genre.color,
-              shadowOpacity: isHovered ? 0.4 : 0.2,
-              shadowRadius: isHovered ? 12 : 8,
-            },
+            styles.genreCardText,
+            { fontSize: Math.max(10, Math.min(cardWidth, cardHeight) * 0.14) }
           ]}
+          numberOfLines={2}
         >
-          <Text
-            style={[
-              styles.genreCardText,
-              { fontSize: Math.max(10, Math.min(cardWidth, cardHeight) * 0.14) }
-            ]}
-            numberOfLines={2}
-          >
-            {genre.name.toLowerCase()}
-          </Text>
-        </View>
-      </Pressable>
-    </Link>
+          {genre.name.toLowerCase()}
+        </Text>
+      </View>
+    </Pressable>
   );
 };
 
@@ -690,7 +701,11 @@ const GenreGrid: React.FC<GenreGridProps> = ({ genres }) => {
 
   // Rotation state - continuous clockwise rotation
   const rotation = useSharedValue(0);
+  const savedRotation = useSharedValue(0);
   const [isPaused, setIsPaused] = useState(false);
+
+  // Track velocity for momentum
+  const rotationVelocity = useSharedValue(0);
 
   // Function to start rotation animation
   const startRotation = (fromValue: number = 0) => {
@@ -705,10 +720,11 @@ const GenreGrid: React.FC<GenreGridProps> = ({ genres }) => {
     );
   };
 
-  // Start continuous clockwise rotation on mount
-  React.useEffect(() => {
-    startRotation(0);
-  }, []);
+  // Auto-rotation disabled to allow free panning
+  // Users can still rotate by clicking on genre segments to center them
+  // React.useEffect(() => {
+  //   startRotation(0);
+  // }, []);
 
   // Pause rotation when long press is active or category is expanded
   React.useEffect(() => {
@@ -742,18 +758,21 @@ const GenreGrid: React.FC<GenreGridProps> = ({ genres }) => {
     }
   }, [allSunburstSegments, expandedCategory]);
 
-  // Pan gesture for dragging the circle
+  // Pan gesture for free panning around the canvas
   const panGesture = Gesture.Pan()
     .onStart(() => {
+      // Save starting positions for translation
       startX.value = translateX.value;
       startY.value = translateY.value;
     })
     .onUpdate((event) => {
+      // Allow free panning around the canvas
       translateX.value = startX.value + event.translationX;
       translateY.value = startY.value + event.translationY;
     })
     .onEnd(() => {
-      // Optional: add momentum or snap back if dragged too far
+      // Optional: Add spring back to center if dragged too far
+      // For now, allow free positioning
     });
 
   // Pinch gesture for zooming
@@ -811,6 +830,49 @@ const GenreGrid: React.FC<GenreGridProps> = ({ genres }) => {
     setHoveredGenre(null);
   };
 
+  // Function to center a genre wedge at the top (12 o'clock)
+  const centerGenreAtTop = (segment: SunburstSegment) => {
+    // Cancel any ongoing rotation
+    cancelAnimation(rotation);
+
+    // Calculate the mid-angle of the segment
+    const midAngle = (segment.startAngle + segment.endAngle) / 2;
+
+    // Convert from radians to degrees
+    const midAngleDegrees = (midAngle * 180) / Math.PI;
+
+    // Calculate how much we need to rotate to center this at top (0 degrees / 12 o'clock)
+    // The segment starts at -90 degrees (top), so we need to rotate by the negative of the mid angle
+    const targetRotation = -midAngleDegrees - 90; // -90 because our starting point is at top
+
+    // Normalize rotation to find the shortest path
+    const currentRotation = rotation.value % 360;
+    let rotationDiff = targetRotation - currentRotation;
+
+    // Find shortest rotation direction
+    if (rotationDiff > 180) {
+      rotationDiff -= 360;
+    } else if (rotationDiff < -180) {
+      rotationDiff += 360;
+    }
+
+    const finalRotation = currentRotation + rotationDiff;
+
+    // Animate to the target rotation with spring for smooth, natural feel
+    rotation.value = withSpring(finalRotation, {
+      damping: 15,
+      stiffness: 100,
+      mass: 0.8,
+    });
+
+    // Don't resume auto-rotation immediately after centering
+    setTimeout(() => {
+      if (!isPaused && !longPressedGenre && !expandedCategory) {
+        startRotation(rotation.value);
+      }
+    }, 3000); // Wait 3 seconds before resuming auto-rotation
+  };
+
   if (genres.length === 0) {
     return (
       <View
@@ -850,12 +912,27 @@ const GenreGrid: React.FC<GenreGridProps> = ({ genres }) => {
                   isLongPressed={longPressedGenre === segment.name}
                   isDiscovered={isGenreDiscovered(segment.name)}
                   onPress={() => {
-                    // If it's a category, toggle expansion
-                    if (segment.category === segment.name) {
-                      setExpandedCategory(expandedCategory === segment.name ? null : segment.name);
-                    } else {
-                      // If it's a genre, navigate to detail
-                      navigation.navigate('GenreDetail', { genreName: segment.name });
+                    try {
+                      // Center the clicked segment at the top
+                      centerGenreAtTop(segment);
+
+                      // If it's a category, toggle expansion
+                      if (segment.category === segment.name) {
+                        console.log('[GenreGrid] Toggling category:', segment.name);
+                        setExpandedCategory(expandedCategory === segment.name ? null : segment.name);
+                      } else {
+                        // If it's a genre, navigate to detail after a short delay
+                        console.log('[GenreGrid] Will navigate to genre:', segment.name);
+                        setTimeout(() => {
+                          try {
+                            navigation.navigate('GenreDetail', { genreName: segment.name });
+                          } catch (error) {
+                            console.error('[GenreGrid] Navigation error:', error);
+                          }
+                        }, 800); // Delay to let the centering animation complete
+                      }
+                    } catch (error) {
+                      console.error('[GenreGrid] Press handler error:', error);
                     }
                   }}
                   onHoverIn={() => handleHover(segment.name)}
@@ -966,14 +1043,16 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   legendDiscovered: {
-    backgroundColor: "#ff00ff",
-    opacity: 1,
-    borderWidth: 1.5,
-    borderColor: "#ffffff",
+    backgroundColor: "#39ff14",
+    opacity: 0.95,
+    borderWidth: 2,
+    borderColor: "#39ff14",
   },
   legendUndiscovered: {
     backgroundColor: "#888",
-    opacity: 0.3,
+    opacity: 0.5,
+    borderWidth: 0.5,
+    borderColor: "rgba(255,255,255,0.2)",
   },
   legendText: {
     color: "#fff",
