@@ -29,6 +29,12 @@
         "NSCameraUsageDescription": "drops needs camera access to scan QR codes and connect with other ravers.",
         "NFCReaderUsageDescription": "drops uses NFC to quickly connect with other ravers and check vibe compatibility."
       },
+      "entitlements": {
+        "com.apple.developer.nfc.readersession.formats": [
+          "NDEF",
+          "TAG"
+        ]
+      },
       "googleServicesFile": "./GoogleService-Info.plist"
     },
     "android": {
